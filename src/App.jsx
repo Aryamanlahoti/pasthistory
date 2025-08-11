@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 const BRAND = "PastForward";
 
 /* ============================================================
-   CURATED PLAYBOOKS (high‑precision)
+   CURATED PLAYBOOKS (high-precision)
    ============================================================ */
 const PLAYBOOKS = [
   {
@@ -18,8 +18,8 @@ const PLAYBOOKS = [
     outcome:
       "Multiple recessions; unemployment rose; inflation broke following sustained policy tightening and structural efficiency gains.",
     signals: [
-      "Large energy/food pass‑through to headline prices",
-      "Wage catch‑up demands and indexation",
+      "Large energy/food pass-through to headline prices",
+      "Wage catch-up demands and indexation",
       "Policy hesitation or mixed guidance",
       "Rationing/price caps talk; subsidies to households",
     ],
@@ -27,7 +27,7 @@ const PLAYBOOKS = [
       "Fuel inventories and shipping rates",
       "Inflation expectations & wage settlements",
       "Fiscal stance vs central bank guidance",
-      "Sector‑by‑sector price diffusion",
+      "Sector-by-sector price diffusion",
     ],
     cases: [
       { name: "1973 Oil Crisis (US/EU)", year: 1973, result: "Rationing; speed limits; strategic reserves" },
@@ -35,7 +35,7 @@ const PLAYBOOKS = [
     ],
     scenarios: {
       baseline: "Prices stay sticky for 2–3 quarters; growth slows; gradual cooling as supply reroutes.",
-      escalation: "Wage‑price spiral risk if guidance weakens; deeper recession under forced disinflation.",
+      escalation: "Wage-price spiral risk if guidance weakens; deeper recession under forced disinflation.",
       deescalation: "Clear policy, targeted support, diversification cool inflation without severe output loss.",
     },
   },
@@ -52,8 +52,8 @@ const PLAYBOOKS = [
     signals: [
       "Funding spreads widening quickly",
       "Insured vs uninsured deposit flight",
-      "Fire‑sales of assets, collateral calls",
-      "Rumor‑driven runs via social platforms",
+      "Fire-sales of assets, collateral calls",
+      "Rumor-driven runs via social platforms",
     ],
     whatToWatch: [
       "Central bank facilities uptake",
@@ -63,7 +63,7 @@ const PLAYBOOKS = [
     ],
     cases: [
       { name: "Panic of 1907 (US)", year: 1907, result: "Private pooling; later creation of the Federal Reserve" },
-      { name: "Global Financial Crisis", year: 2008, result: "TARP, guarantees; multi‑year recovery; tighter rules" },
+      { name: "Global Financial Crisis", year: 2008, result: "TARP, guarantees; multi-year recovery; tighter rules" },
     ],
     scenarios: {
       baseline: "Backstops stabilize funding; tighter credit weighs on growth.",
@@ -78,12 +78,12 @@ const PLAYBOOKS = [
     tags: ["politics", "protests"],
     keywords: ["protest","march","curfew","riot","strike","movement","square","security","law"],
     summary:
-      "Bread‑and‑butter grievances + legitimacy crises mobilize crowds. Trajectories depend on security responses and elite splits.",
+      "Bread-and-butter grievances + legitimacy crises mobilize crowds. Trajectories depend on security responses and elite splits.",
     outcome:
       "Some concessions and elections; elsewhere crackdowns or civil conflict; international attention alters incentives.",
     signals: [
-      "Growing weekend peaks, better logistics, legal‑aid tents",
-      "Cross‑class coalition with clear, limited demands",
+      "Growing weekend peaks, better logistics, legal-aid tents",
+      "Cross-class coalition with clear, limited demands",
       "Security tactics shift (restraint vs mass arrests)",
       "Livestreams and diaspora support",
     ],
@@ -100,7 +100,7 @@ const PLAYBOOKS = [
     scenarios: {
       baseline: "Negotiations on process reforms; protests ebb/flow with visible concessions.",
       escalation: "Violent episodes radicalize actors; emergency laws and broader arrests.",
-      deescalation: "Verified reforms with timetables; third‑party monitors; channeling into elections.",
+      deescalation: "Verified reforms with timetables; third-party monitors; channeling into elections.",
     },
   },
   {
@@ -112,12 +112,12 @@ const PLAYBOOKS = [
     summary:
       "Governments seek exceptional access; industry and researchers warn about systemic risk and circumvention.",
     outcome:
-      "Key‑escrow proposals withdrawn historically; strong encryption remained; debates recur with new legislation.",
+      "Key-escrow proposals withdrawn historically; strong encryption remained; debates recur with new legislation.",
     signals: [
       "Consultation papers and draft bills",
       "Coalitions of firms, academics, civil groups",
       "Court challenges and compliance timelines",
-      "Cross‑border data/interop frictions",
+      "Cross-border data/interop frictions",
     ],
     whatToWatch: ["Scope of covered services/devices","Liability rules","Feasibility reviews","Allies’ alignment"],
     cases: [
@@ -127,7 +127,7 @@ const PLAYBOOKS = [
     scenarios: {
       baseline: "Narrowed bill with oversight; prolonged litigation.",
       escalation: "Broad mandate passes; fragmented markets; chilling effect on secure apps.",
-      deescalation: "Targeted warrants and device‑side safety features without backdoors.",
+      deescalation: "Targeted warrants and device-side safety features without backdoors.",
     },
   },
   {
@@ -137,19 +137,19 @@ const PLAYBOOKS = [
     tags: ["technology", "economy"],
     keywords: ["streaming","youtube","cord","cutting","ratings","advertising","viewership","subscription"],
     summary:
-      "On‑demand shifts fragment audiences and budgets; legacy schedules lean on live events and news.",
+      "On-demand shifts fragment audiences and budgets; legacy schedules lean on live events and news.",
     outcome:
       "Consolidation, telemetry metrics, creator partnerships, shorter seasons.",
     signals: [
       "Declining live ratings except sports/news",
       "Budget reallocations to digital",
-      "Creator‑economy tie‑ups",
+      "Creator-economy tie-ups",
       "Exclusive platform deals",
     ],
-    whatToWatch: ["ARPU/churn","Sports rights cycles","Ad‑tech privacy changes","Regional quotas"],
-    cases: [{ name: "Cable → Streaming", year: 2010, result: "Cord‑cutting; bundle reconfigured" }],
+    whatToWatch: ["ARPU/churn","Sports rights cycles","Ad-tech privacy changes","Regional quotas"],
+    cases: [{ name: "Cable → Streaming", year: 2010, result: "Cord-cutting; bundle reconfigured" }],
     scenarios: {
-      baseline: "Hybrid bundles; ad‑supported tiers grow.",
+      baseline: "Hybrid bundles; ad-supported tiers grow.",
       escalation: "Rights bidding wars squeeze margins; layoffs, consolidation.",
       deescalation: "Shared rights & interoperable IDs cut costs; steadier margins.",
     },
@@ -163,11 +163,11 @@ const PLAYBOOKS = [
     summary:
       "When canals/straits jam, transit times stretch and spot rates spike until carriers reroute and ports rebalance.",
     outcome:
-      "Temporary scarcity and price spikes; medium‑term rerouting and inventory changes.",
+      "Temporary scarcity and price spikes; medium-term rerouting and inventory changes.",
     signals: [
       "Backlogs/ETA slippage on key lanes",
       "Carrier advisories & surcharges",
-      "Insurance changes on war‑risk lanes",
+      "Insurance changes on war-risk lanes",
       "Inventory prioritization memos",
     ],
     whatToWatch: ["Dwell time, blank sailings","Port throughput by lane","Airfreight substitution","Retail stockouts"],
@@ -177,7 +177,7 @@ const PLAYBOOKS = [
     ],
     scenarios: {
       baseline: "Rates spike, then cool across 1–2 quarters; shelves stagger.",
-      escalation: "Extended conflict/closure → multi‑quarter disruption; inflation impulse.",
+      escalation: "Extended conflict/closure → multi-quarter disruption; inflation impulse.",
       deescalation: "Convoys and time windows clear queues; capacity rebalances.",
     },
   },
@@ -195,13 +195,13 @@ const PLAYBOOKS = [
       "Regulator inquiries & DPAs",
       "Advertiser boycotts",
       "SDK/API tightening",
-      "Opt‑out spikes",
+      "Opt-out spikes",
     ],
-    whatToWatch: ["Cross‑app identifiers","Consent strings & dark‑pattern claims","Data localization rules","Walled‑garden shifts"],
+    whatToWatch: ["Cross-app identifiers","Consent strings & dark-pattern claims","Data localization rules","Walled-garden shifts"],
     cases: [{ name: "Cambridge Analytica", year: 2018, result: "Fines; GDPR/CCPA momentum; API restrictions" }],
     scenarios: {
-      baseline: "Compliance costs up; ad targeting shifts to contextual & first‑party.",
-      escalation: "Heavy fines + ban on cross‑site tracking; small apps struggle.",
+      baseline: "Compliance costs up; ad targeting shifts to contextual & first-party.",
+      escalation: "Heavy fines + ban on cross-site tracking; small apps struggle.",
       deescalation: "Clear guidance; industry standards; stable ad yields.",
     },
   },
@@ -214,7 +214,7 @@ const PLAYBOOKS = [
     summary:
       "Early transparency, testing, and tracing change epidemic curves and economic impact.",
     outcome:
-      "Containment (SARS) with months of disruption; large systemic shock (COVID‑19) when delayed/mass spread.",
+      "Containment (SARS) with months of disruption; large systemic shock (COVID-19) when delayed/mass spread.",
     signals: [
       "Hospital clusters, nosocomial spread",
       "Genomic surveillance reporting",
@@ -224,12 +224,12 @@ const PLAYBOOKS = [
     whatToWatch: ["Rt and hospitalization trends","Testing positivity & coverage","Workplace/school guidance","Global variant detection"],
     cases: [
       { name: "SARS", year: 2003, result: "Contained after months; reporting rules strengthened" },
-      { name: "COVID‑19", year: 2020, result: "Global pandemic; sustained systemic impacts" },
+      { name: "COVID-19", year: 2020, result: "Global pandemic; sustained systemic impacts" },
     ],
     scenarios: {
       baseline: "Localized waves; targeted measures; modest economic drag.",
-      escalation: "Widespread transmission; travel curbs; service‑sector hit.",
-      deescalation: "Rapid case‑finding + vaccines/boosters; quick normalization.",
+      escalation: "Widespread transmission; travel curbs; service-sector hit.",
+      deescalation: "Rapid case-finding + vaccines/boosters; quick normalization.",
     },
   },
   {
@@ -245,13 +245,13 @@ const PLAYBOOKS = [
     signals: [
       "Unmarked troops or rapid buildup",
       "Local political moves/referendums",
-      "Sanctions & counter‑sanctions",
-      "Frozen‑conflict indicators",
+      "Sanctions & counter-sanctions",
+      "Frozen-conflict indicators",
     ],
-    whatToWatch: ["Logistics lines and depots","Third‑party mediation prospects","Recognition votes & court cases","Cross‑border trade adjustments"],
+    whatToWatch: ["Logistics lines and depots","Third-party mediation prospects","Recognition votes & court cases","Cross-border trade adjustments"],
     cases: [{ name: "Crimea Annexation", year: 2014, result: "Annexation; sanctions; prolonged standoff" }],
     scenarios: {
-      baseline: "Frozen conflict with periodic flare‑ups; sanctions persist.",
+      baseline: "Frozen conflict with periodic flare-ups; sanctions persist.",
       escalation: "Expanded operations; broader war; tighter sanctions.",
       deescalation: "Demilitarized buffer; partial deals; confidence measures.",
     },
@@ -265,7 +265,7 @@ const PLAYBOOKS = [
     summary:
       "Tight timetables and prestige costs compress decision windows, raising miscalculation risk.",
     outcome:
-      "Escalation can leap from local incident to multi‑party war; off‑ramps: verified pull‑backs, hotlines, and face‑saving mediation.",
+      "Escalation can leap from local incident to multi-party war; off-ramps: verified pull-backs, hotlines, and face-saving mediation.",
     signals: [
       "Overlapping exercises near borders",
       "Ultimatums with short deadlines",
@@ -277,7 +277,7 @@ const PLAYBOOKS = [
     scenarios: {
       baseline: "Extended standoff; sporadic incidents; heavy signaling.",
       escalation: "Accident during drills; rapid mobilization; widened conflict.",
-      deescalation: "Sequenced de‑escalation; hotline & monitors; limited pull‑backs.",
+      deescalation: "Sequenced de-escalation; hotline & monitors; limited pull-backs.",
     },
   },
 
@@ -291,15 +291,15 @@ const PLAYBOOKS = [
     summary:
       "Close counts and disputed procedures shift resolution to courts/commissions; legitimacy hinges on transparency.",
     outcome:
-      "Resolutions via recounts/courts/power‑sharing; later procedural reforms.",
-    signals: ["Parallel tabulations","Chain‑of‑custody fights","Board pressure","Observer statements"],
+      "Resolutions via recounts/courts/power-sharing; later procedural reforms.",
+    signals: ["Parallel tabulations","Chain-of-custody fights","Board pressure","Observer statements"],
     whatToWatch: ["Margins vs thresholds","Uniform standards","Court calendars","Infra security"],
     cases: [
       { name: "US 1876", year: 1877, result: "Commission; political bargain" },
       { name: "US 2000", year: 2000, result: "Court decision; reforms" },
     ],
     scenarios: {
-      baseline: "Court‑driven resolution; reforms debate.",
+      baseline: "Court-driven resolution; reforms debate.",
       escalation: "Mass protests; dual slates.",
       deescalation: "Bipartisan audits; acceptance signals.",
     },
@@ -311,9 +311,9 @@ const PLAYBOOKS = [
     tags: ["technology", "politics"],
     keywords: ["ai","model","safety","audits","licensing","compute","export","transparency"],
     summary:
-      "Governments adapt safety regimes (testing, disclosure, incident reporting) from high‑risk sectors to AI.",
+      "Governments adapt safety regimes (testing, disclosure, incident reporting) from high-risk sectors to AI.",
     outcome:
-      "Registries, audits, red‑team standards; licensing for frontier systems in some jurisdictions.",
+      "Registries, audits, red-team standards; licensing for frontier systems in some jurisdictions.",
     signals: ["Model/eval rules","Compute thresholds","Incident databases","Audit markets"],
     whatToWatch: ["Alignment abroad","Open vs closed treatment","Liability","Export enforcement"],
     cases: [
@@ -321,7 +321,7 @@ const PLAYBOOKS = [
       { name: "Drug trials standards", year: 1962, result: "Phased trials; reporting" },
     ],
     scenarios: {
-      baseline: "Risk‑tiered rules; audit ecosystem grows.",
+      baseline: "Risk-tiered rules; audit ecosystem grows.",
       escalation: "Low thresholds; SME burden high.",
       deescalation: "Harmonized baselines; interop.",
     },
@@ -335,7 +335,7 @@ const PLAYBOOKS = [
     summary:
       "Interest burdens outpace capacity; states seek rollovers or restructure with official and private creditors.",
     outcome:
-      "Haircuts/maturity extensions; conditional programs; multi‑year growth drag.",
+      "Haircuts/maturity extensions; conditional programs; multi-year growth drag.",
     signals: ["Spreads/CDS","Reserves drop","IMF talks","Bank exposure"],
     whatToWatch: ["Debt/GDP","Primary balance","FX liabilities","Recap needs"],
     cases: [
@@ -350,7 +350,7 @@ const PLAYBOOKS = [
   },
   {
     id: "currency_slide",
-    title: "Rapid Currency Slide & Pass‑Through",
+    title: "Rapid Currency Slide & Pass-Through",
     era: "1994, 1997–1998, 2018",
     tags: ["economy", "inflation", "finance"],
     keywords: ["devaluation","fx","outflow","peg","import","dollarization","exchange"],
@@ -379,7 +379,7 @@ const PLAYBOOKS = [
     summary:
       "Ransomware/targeted intrusions disrupt energy, water, and hospitals; restoration hinges on backups and segmentation.",
     outcome:
-      "Service interruptions; tighter rules; incident‑response drills and segmentation investments.",
+      "Service interruptions; tighter rules; incident-response drills and segmentation investments.",
     signals: ["Lateral movement","Privilege escalation","Exfiltration/leaks","Ransom notes"],
     whatToWatch: ["Backup integrity","Manual overrides","Vendor exposure","Public health impact"],
     cases: [
@@ -388,7 +388,7 @@ const PLAYBOOKS = [
     ],
     scenarios: {
       baseline: "Localized outages; staged restoration.",
-      escalation: "Multi‑site disruption; emergency powers.",
+      escalation: "Multi-site disruption; emergency powers.",
       deescalation: "Rapid isolate/restore; drills.",
     },
   },
@@ -404,7 +404,7 @@ const PLAYBOOKS = [
       "Foreclosures, bank stress, negative wealth effects; underwriting reforms.",
     signals: ["Price/rent divergence","Delinquencies","Tighter lending","Builder cancellations"],
     whatToWatch: ["Mortgage spreads","Debt service ratios","Construction jobs","REO pipeline"],
-    cases: [{ name: "US Housing Bust", year: 2008, result: "GFC trigger; Dodd‑Frank" }],
+    cases: [{ name: "US Housing Bust", year: 2008, result: "GFC trigger; Dodd-Frank" }],
     scenarios: {
       baseline: "Regional corrections; slower construction.",
       escalation: "Credit crunch; broader recession.",
@@ -420,14 +420,14 @@ const PLAYBOOKS = [
     summary:
       "States restrict advanced chips/tools to maintain advantage; firms rework supply chains.",
     outcome:
-      "Tech bifurcation, compliance costs, regional fabs; short‑term shortages.",
+      "Tech bifurcation, compliance costs, regional fabs; short-term shortages.",
     signals: ["Entity lists","License holds","Capacity shifts","Allied alignment"],
     whatToWatch: ["Node availability","Alt tools","Retaliation","Capex"],
-    cases: [{ name: "Toshiba‑Kongsberg", year: 1987, result: "Stronger export regime" }],
+    cases: [{ name: "Toshiba-Kongsberg", year: 1987, result: "Stronger export regime" }],
     scenarios: {
       baseline: "Gradual decoupling; regional capacity grows.",
-      escalation: "Tit‑for‑tat bans; acute shortages.",
-      deescalation: "Narrow carve‑outs; license pathways.",
+      escalation: "Tit-for-tat bans; acute shortages.",
+      deescalation: "Narrow carve-outs; license pathways.",
     },
   },
   {
@@ -439,17 +439,17 @@ const PLAYBOOKS = [
     summary:
       "Tariff cycles shift sourcing and prices; retaliation can spread beyond the initial sector.",
     outcome:
-      "Trade diversion, higher consumer costs, and negotiated truces; re‑shoring incentives.",
-    signals: ["Investigations","Retaliatory lists","Rules‑of‑origin changes","Currency counters"],
+      "Trade diversion, higher consumer costs, and negotiated truces; re-shoring incentives.",
+    signals: ["Investigations","Retaliatory lists","Rules-of-origin changes","Currency counters"],
     whatToWatch: ["Import prices","Sourcing moves","WTO dockets","Lobbying"],
     cases: [
-      { name: "Smoot‑Hawley", year: 1930, result: "Global retaliation; contraction" },
+      { name: "Smoot-Hawley", year: 1930, result: "Global retaliation; contraction" },
       { name: "US–China Tariffs", year: 2018, result: "Partial truce; supply shifts" },
     ],
     scenarios: {
       baseline: "Targeted tariffs; gradual reshoring.",
       escalation: "Broad retaliation; growth hit.",
-      deescalation: "Sector deals; tariff‑rate quotas.",
+      deescalation: "Sector deals; tariff-rate quotas.",
     },
   },
   {
@@ -461,9 +461,9 @@ const PLAYBOOKS = [
     summary:
       "Sudden inflows test housing, services, and politics; capacity and coordination shape outcomes.",
     outcome:
-      "Policy overhauls, burden‑sharing deals, and long‑term integration programs.",
+      "Policy overhauls, burden-sharing deals, and long-term integration programs.",
     signals: ["Arrival spikes","Processing backlogs","Capacity strain","Border policy shifts"],
-    whatToWatch: ["Housing/healthcare bottlenecks","Labor‑market absorption","Local political reactions","International funding"],
+    whatToWatch: ["Housing/healthcare bottlenecks","Labor-market absorption","Local political reactions","International funding"],
     cases: [{ name: "EU Refugee Crisis", year: 2015, result: "Quota debates; agreements with neighbors" }],
     scenarios: {
       baseline: "Managed inflows; services scale gradually.",
@@ -486,13 +486,13 @@ const PLAYBOOKS = [
     cases: [{ name: "Ethiopia Famine", year: 1984, result: "International mobilization; reforms" }],
     scenarios: {
       baseline: "Localized crisis; targeted aid reduces mortality.",
-      escalation: "Multi‑region famine; excess mortality.",
-      deescalation: "Access corridors + pre‑positioned stocks; rains return.",
+      escalation: "Multi-region famine; excess mortality.",
+      deescalation: "Access corridors + pre-positioned stocks; rains return.",
     },
   },
   {
     id: "coup_dynamics",
-    title: "Coup Dynamics & Post‑Takeover Paths",
+    title: "Coup Dynamics & Post-Takeover Paths",
     era: "1960s–present",
     tags: ["politics", "security"],
     keywords: ["coup","junta","suspension","constitution","transition","sanctions"],
@@ -539,13 +539,13 @@ const PLAYBOOKS = [
 const TEMPLATES = {
   economy: {
     title: "Macro Inflation & Slowdown Pattern",
-    era: "Cross‑episode",
+    era: "Cross-episode",
     tags: ["economy", "inflation"],
     summary:
       "Prices rise across essentials while growth cools; expectations and energy/supply slack drive the arc.",
     outcome:
       "Soft landings when guidance is clear and shocks fade; recessions when disinflation is forced or delayed.",
-    signals: ["Headline vs core divergence","Wage bargaining rounds","Energy/food pass‑through","Price‑setting frequency"],
+    signals: ["Headline vs core divergence","Wage bargaining rounds","Energy/food pass-through","Price-setting frequency"],
     whatToWatch: ["Inflation expectations","Real incomes","Policy path","Sector diffusion"],
     cases: [
       { name: "US 1970s", year: 1979, result: "Tightening; recession; disinflation" },
@@ -553,7 +553,7 @@ const TEMPLATES = {
     ],
     scenarios: {
       baseline: "Sticky prints for 2–3 quarters; gradual cooling.",
-      escalation: "Wage‑price loop; painful disinflation.",
+      escalation: "Wage-price loop; painful disinflation.",
       deescalation: "Energy slack + credible policy → soft landing.",
     },
   },
@@ -585,8 +585,8 @@ const TEMPLATES = {
       "Crowds organize around grievances; security posture and elite splits steer outcomes.",
     outcome:
       "From negotiated reforms to repression; sometimes elections.",
-    signals: ["Weekend peaks","Union join‑ins","Arrest counts","Media control"],
-    whatToWatch: ["Mediator presence","Elite cohesion","Rule‑of‑law steps","Crowd logistics"],
+    signals: ["Weekend peaks","Union join-ins","Arrest counts","Media control"],
+    whatToWatch: ["Mediator presence","Elite cohesion","Rule-of-law steps","Crowd logistics"],
     cases: [
       { name: "Eastern Europe 1989", year: 1989, result: "Transitions" },
       { name: "Various 2019–20", year: 2020, result: "Mixed outcomes" },
@@ -612,7 +612,7 @@ const TEMPLATES = {
       { name: "Global close races", year: 2019, result: "Audits/coalitions" },
     ],
     scenarios: {
-      baseline: "Court‑guided finish.",
+      baseline: "Court-guided finish.",
       escalation: "Mass mobilization; dual claims.",
       deescalation: "Bipartisan audits; acceptance signals.",
     },
@@ -634,7 +634,7 @@ const TEMPLATES = {
     scenarios: {
       baseline: "Audits + incremental rules.",
       escalation: "Heavy fines; feature removals.",
-      deescalation: "Self‑reg + transparency reports.",
+      deescalation: "Self-reg + transparency reports.",
     },
   },
   cyber: {
@@ -652,7 +652,7 @@ const TEMPLATES = {
     ],
     scenarios: {
       baseline: "Localized outage; restore in days.",
-      escalation: "Multi‑site; emergency powers.",
+      escalation: "Multi-site; emergency powers.",
       deescalation: "Rapid isolate/patch; drills.",
     },
   },
@@ -684,7 +684,7 @@ const TEMPLATES = {
       "Transport nodes clog; queues and surcharges ripple through inventories.",
     outcome:
       "Staggered arrivals; alternate routing; price spikes then normalization.",
-    signals: ["Dwell times","Blank sailings","Port backlogs","War‑risk premiums"],
+    signals: ["Dwell times","Blank sailings","Port backlogs","War-risk premiums"],
     whatToWatch: ["ETA drift","Airfreight use","Retail stockouts","Order cancellations"],
     cases: [
       { name: "Suez events", year: 2021, result: "Global delays" },
@@ -707,7 +707,7 @@ const TEMPLATES = {
     whatToWatch: ["Rt/hospital","Positivity","Procurement","Variants"],
     cases: [
       { name: "SARS", year: 2003, result: "Contained" },
-      { name: "COVID‑19", year: 2020, result: "Pandemic" },
+      { name: "COVID-19", year: 2020, result: "Pandemic" },
     ],
     scenarios: {
       baseline: "Localized waves.",
@@ -720,17 +720,17 @@ const TEMPLATES = {
     era: "1992, 2005, 2017",
     tags: ["disaster", "supply"],
     summary:
-      "Wind/flood damage disrupts power, logistics, and housing; recovery hinges on pre‑positioned stocks and codes.",
+      "Wind/flood damage disrupts power, logistics, and housing; recovery hinges on pre-positioned stocks and codes.",
     outcome:
       "Restoration over weeks; code upgrades; insurance reshuffles.",
     signals: ["Track & surge","Evac orders","Grid damage","Fuel distribution"],
-    whatToWatch: ["Mutual‑aid crews","Shelter capacity","Debris removal","Insurance claims"],
+    whatToWatch: ["Mutual-aid crews","Shelter capacity","Debris removal","Insurance claims"],
     cases: [
       { name: "Katrina", year: 2005, result: "Mass displacement; reforms" },
       { name: "Harvey", year: 2017, result: "Flooding; rebuilds" },
     ],
     scenarios: {
-      baseline: "Weeks‑long outages; staged reopen.",
+      baseline: "Weeks-long outages; staged reopen.",
       escalation: "Levee failures; health crises.",
       deescalation: "Rapid grid repair; relief flow.",
     },
@@ -743,7 +743,7 @@ const TEMPLATES = {
       "Floods disrupt transport, housing, and services; insurance and drainage determine resilience.",
     outcome:
       "Rebuilds and drainage upgrades; zoning changes.",
-    signals: ["River crest forecasts","Reservoir releases","Road closures","Boil‑water notices"],
+    signals: ["River crest forecasts","Reservoir releases","Road closures","Boil-water notices"],
     whatToWatch: ["Pumps/drainage","Shelter capacity","Insurance gaps","Mold/health"],
     cases: [{ name: "Various rivers", year: 2010, result: "Zoning upgrades" }],
     scenarios: {
@@ -760,7 +760,7 @@ const TEMPLATES = {
       "Drought + heat produce megafires; smoke affects health and grids.",
     outcome:
       "Evacuations; grid hardening; building codes for defensible space.",
-    signals: ["Red‑flag warnings","Fuel moisture","Lightning events","Wind shifts"],
+    signals: ["Red-flag warnings","Fuel moisture","Lightning events","Wind shifts"],
     whatToWatch: ["Air quality","Grid PSPS","Evac routes","Firebreak status"],
     cases: [{ name: "California seasons", year: 2020, result: "PSPS; code changes" }],
     scenarios: {
@@ -791,16 +791,16 @@ const TEMPLATES = {
     era: "Recurring",
     tags: ["war", "diplomacy"],
     summary:
-      "Local incidents escalate through mobilization and prestige costs; de‑confliction avoids spirals.",
+      "Local incidents escalate through mobilization and prestige costs; de-confliction avoids spirals.",
     outcome:
       "Frozen lines or limited deals; sanctions risk.",
     signals: ["Troop movements","Shelling","Ultimatums","Hotlines"],
-    whatToWatch: ["Supply lines","Observers","Sanction cycles","Back‑channel talks"],
+    whatToWatch: ["Supply lines","Observers","Sanction cycles","Back-channel talks"],
     cases: [{ name: "Multiple theaters", year: 2014, result: "Frozen conflicts" }],
     scenarios: {
       baseline: "Extended standoff.",
       escalation: "Accident → wider war.",
-      deescalation: "Sequenced pull‑backs.",
+      deescalation: "Sequenced pull-backs.",
     },
   },
   migration: {
@@ -827,7 +827,7 @@ const TEMPLATES = {
     summary:
       "Aging systems or drought cause unsafe/insufficient water; trust hinges on testing and transparent fixes.",
     outcome:
-      "Pipe replacements or treatment upgrades; boil‑water periods.",
+      "Pipe replacements or treatment upgrades; boil-water periods.",
     signals: ["Boil notices","Test failures","Pressure drops","Supply cuts"],
     whatToWatch: ["Replacement timelines","Funding","Alt supply","Public comms"],
     cases: [{ name: "Flint", year: 2014, result: "Pipe replacements; oversight" }],
@@ -862,8 +862,8 @@ const TEMPLATES = {
       "Abort modes and recovery procedures contain risk; programs adjust cadence after anomalies.",
     outcome:
       "Inspection campaigns and schedule reshuffles; safety culture gains.",
-    signals: ["Scrubs/holds","Telemetry flags","Debris/splashdown","Post‑flight checks"],
-    whatToWatch: ["Heat‑shield/booster wear","Crew medical","Cadence changes","Pad availability"],
+    signals: ["Scrubs/holds","Telemetry flags","Debris/splashdown","Post-flight checks"],
+    whatToWatch: ["Heat-shield/booster wear","Crew medical","Cadence changes","Pad availability"],
     cases: [{ name: "Apollo/Soyuz eras", year: 1975, result: "Procedural playbooks" }],
     scenarios: {
       baseline: "Short cadence pause; reviews.",
@@ -897,7 +897,7 @@ function extractTagsFromText(s) {
     health: ["virus","outbreak","mask","quarantine","vaccine","cases","hospital","malnutrition","public health"],
     diplomacy: ["sanction","ceasefire","cease-fire","treaty","talks","mediation","negotiation","summit","export control","alignment"],
     war: [
-      "war","fight","fights","fighting","clash","clashes","hostilities","airstrike","airstrikes","rocket","rockets",
+      "war","fight(s|ing)?","clash(es)?","hostilities","airstrike(s)?","rocket(s)?",
       "bombardment","incursion","offensive","shelling","ground operation","troops","missile","border"
     ],
     space: ["nasa","spacex","capsule","rover","iss","splashdown","reentry","launch"],
@@ -1023,27 +1023,27 @@ function futureFromTags(tagSet, toggles) {
   if (tagSet.has("finance")) {
     return [
       "Immediate: guarantees, facility lines, and transparent audits to stabilize funding.",
-      pick(t.finCond === "tight", "Tight conditions amplify deleveraging; SME credit weakens.", "Loose policy cushions credit but raises moral‑hazard debate."),
+      pick(t.finCond === "tight", "Tight conditions amplify deleveraging; SME credit weakens.", "Loose policy cushions credit but raises moral-hazard debate."),
       pick(t.institutions === "strong", "Clear disclosures shorten the panic window.", "Information gaps extend deposit flight and spreads.")
     ].join(" ");
   }
   if (tagSet.has("economy") || tagSet.has("inflation")) {
     return [
-      "Near‑term: choppy prints as energy/food pass through; wage talks broaden.",
+      "Near-term: choppy prints as energy/food pass through; wage talks broaden.",
       pick(t.supplySlack === "high", "Slack cools headline inflation sooner.", "Limited slack prolongs pressure."),
       pick(t.finCond === "tight", "Tighter policy slows growth but anchors expectations.", "Loose credit risks persistence.")
     ].join(" ");
   }
   if (tagSet.has("protests") || tagSet.has("politics")) {
     return [
-      "Next weeks: larger weekend gatherings and legal‑aid infrastructure.",
+      "Next weeks: larger weekend gatherings and legal-aid infrastructure.",
       pick(t.mediators, "Mediators structure verifiable concessions.", "Without mediators, policing posture sets momentum.")
     ].join(" ");
   }
   if (tagSet.has("war") || tagSet.has("diplomacy")) {
     return [
       "Expect sanctions and standoff lines; hotline usage and observers determine miscalculation risk.",
-      pick(t.mediators, "Third‑party monitors stabilize a freeze.", "Absent observers, violations persist.")
+      pick(t.mediators, "Third-party monitors stabilize a freeze.", "Absent observers, violations persist.")
     ].join(" ");
   }
   if (tagSet.has("technology") || tagSet.has("cyber")) {
@@ -1054,7 +1054,7 @@ function futureFromTags(tagSet, toggles) {
   }
   if (tagSet.has("health")) {
     return [
-      "Case‑finding, procurement, and transparent reporting drive the curve.",
+      "Case-finding, procurement, and transparent reporting drive the curve.",
       pick(t.institutions === "strong", "Rapid adjustments minimize disruption.", "Delays fuel rumor cycles and late interventions.")
     ].join(" ");
   }
@@ -1066,11 +1066,11 @@ function futureFromTags(tagSet, toggles) {
   }
   if (tagSet.has("disaster") || tagSet.has("water_crisis")) {
     return [
-      "Response hinges on logistics corridors and pre‑positioned stocks; transparent risk comms matter.",
+      "Response hinges on logistics corridors and pre-positioned stocks; transparent risk comms matter.",
       "Expect staged restoration and code upgrades."
     ].join(" ");
   }
-  return "Expect clarifying follow‑ups on actors, budgets, and timelines; outcomes range from small pilots to binding measures.";
+  return "Expect clarifying follow-ups on actors, budgets, and timelines; outcomes range from small pilots to binding measures.";
 }
 
 function possibleFutureText(pb, t) {
@@ -1079,22 +1079,22 @@ function possibleFutureText(pb, t) {
   const A = [];
   if (pb.id === "stagflation_energy") {
     A.push(
-      "Near‑term: prices stay choppy as energy/food pass through; wage talks broaden.",
-      pick(t.finCond === "tight", "Tighter financial conditions slow growth but help anchor expectations.", "Loose credit risks longer‑lasting price momentum."),
+      "Near-term: prices stay choppy as energy/food pass through; wage talks broaden.",
+      pick(t.finCond === "tight", "Tighter financial conditions slow growth but help anchor expectations.", "Loose credit risks longer-lasting price momentum."),
       pick(t.institutions === "strong", "Clear guidance supports disinflation.", "Mixed signals entrench frequent repricing."),
       pick(t.supplySlack === "high", "Slack improves, cooling headline prints sooner.", "Limited slack prolongs the shock across categories.")
     );
   } else if (pb.id === "bank_panic") {
     A.push(
       "Immediate: guarantees, facility lines, and forensic audits to stabilize funding.",
-      pick(t.institutions === "strong", "Transparent disclosures reduce rumor‑driven runs.", "Information gaps fuel depositor flight and wider spreads."),
-      pick(t.finCond === "tight", "Deleveraging accelerates; credit to SMEs falls.", "Looser policy cushions credit but raises moral‑hazard debates.")
+      pick(t.institutions === "strong", "Transparent disclosures reduce rumor-driven runs.", "Information gaps fuel depositor flight and wider spreads."),
+      pick(t.finCond === "tight", "Deleveraging accelerates; credit to SMEs falls.", "Looser policy cushions credit but raises moral-hazard debates.")
     );
   } else if (pb.id === "protest_wave") {
     A.push(
-      "Next weeks: weekend peaks, better logistics, livestreams, and legal‑aid tents.",
-      pick(t.mediators, "Third‑party mediators structure verifiable concessions.", "Without mediators, talks stall and policing sets momentum."),
-      pick(t.infoVolatile, "Viral clips raise escalation risk after clashes.", "Lower volatility enables de‑escalation playbooks.")
+      "Next weeks: weekend peaks, better logistics, livestreams, and legal-aid tents.",
+      pick(t.mediators, "Third-party mediators structure verifiable concessions.", "Without mediators, talks stall and policing sets momentum."),
+      pick(t.infoVolatile, "Viral clips raise escalation risk after clashes.", "Lower volatility enables de-escalation playbooks.")
     );
   } else if (pb.id === "encryption_debate") {
     A.push(
@@ -1104,29 +1104,29 @@ function possibleFutureText(pb, t) {
     );
   } else if (pb.id === "streaming_disruption") {
     A.push(
-      "Budgets continue shifting to on‑demand; ad‑supported tiers expand.",
-      pick(t.infoVolatile, "Short‑form spikes whipsaw schedules and marketing spends.", "Stable metrics favor long‑form franchises and live events.")
+      "Budgets continue shifting to on-demand; ad-supported tiers expand.",
+      pick(t.infoVolatile, "Short-form spikes whipsaw schedules and marketing spends.", "Stable metrics favor long-form franchises and live events.")
     );
   } else if (pb.id === "supply_chokepoint") {
     A.push(
       "Carriers reroute; spot rates spike first, then cool as capacity rebalances.",
       pick(t.supplySlack === "high", "High buffers blunt stockouts.", "Low buffers cause staggered shelves and shrinkflation."),
-      "Airfreight substitution grows for time‑sensitive goods."
+      "Airfreight substitution grows for time-sensitive goods."
     );
   } else if (pb.id === "data_privacy_backlash") {
     A.push(
-      "Audits and consent changes roll out; advertisers pivot to contextual and first‑party data.",
+      "Audits and consent changes roll out; advertisers pivot to contextual and first-party data.",
       pick(t.institutions === "strong", "Clear guidance reduces legal uncertainty.", "Patchy enforcement keeps risk premiums high.")
     );
   } else if (pb.id === "public_health_outbreak") {
     A.push(
-      "Case‑finding and targeted testing shape the curve; schools/workplaces update guidance.",
+      "Case-finding and targeted testing shape the curve; schools/workplaces update guidance.",
       pick(t.institutions === "strong", "Transparent reporting and rapid procurement reduce disruption.", "Slow reporting fuels rumor cycles and late interventions.")
     );
   } else if (pb.id === "territorial_fait_accompli") {
     A.push(
       "Expect sanctions and standoff lines; skirmishes along contact points.",
-      pick(t.mediators, "Monitors and DMZs stabilize a freeze.", "Absent monitors, violations and tit‑for‑tat fire are common.")
+      pick(t.mediators, "Monitors and DMZs stabilize a freeze.", "Absent monitors, violations and tit-for-tat fire are common.")
     );
   } else if (pb.id === "alliance_crisis") {
     A.push(
@@ -1300,6 +1300,242 @@ function buildQuantPack(event, pb){
 }
 
 /* ============================================================
+   NEW: Evidence + Metric composites (backing the big numbers)
+   ============================================================ */
+
+// Robust scaler -> 0..100 using median/MAD -> logistic
+function toScore(x, median, mad, direction = "higher=hotter") {
+  const z = mad === 0 ? 0 : (x - median) / (1.4826 * mad);
+  const s = 1 / (1 + Math.exp(-z)); // 0..1
+  const pct = direction === "higher=hotter" ? s : 1 - s;
+  return Math.round(pct * 100);
+}
+
+// Evidence tiles (replace values/links with your live data later)
+const EVIDENCE = [
+  // Inflation pressure inputs
+  { id: "medianCPI",       group: "inflation", label: "Median CPI (y/y)", value: 3.2,  unit: "%",  asOf: "Jun 2025", method: "Cleveland Fed median CPI", sourceName: "FRED", sourceUrl: "https://fred.stlouisfed.org/series/MEDCPIM158SFRBCLE", pctile5y: 68 },
+  { id: "trimmedPCE",      group: "inflation", label: "Trimmed-Mean PCE (y/y)", value: 2.7, unit: "%",  asOf: "Jun 2025", method: "Dallas Fed trimmed mean", sourceName: "Dallas Fed", sourceUrl: "https://www.dallasfed.org/research/pce", pctile5y: 55 },
+  { id: "diffusionShare",  group: "inflation", label: "CPI items >3% y/y", value: 47, unit: "% of basket", asOf: "Jun 2025", method: "Price diffusion share", sourceName: "BLS (constructed)", sourceUrl: "https://www.bls.gov/cpi/", pctile5y: 62 },
+
+  // Energy shock inputs
+  { id: "wtiYoY",          group: "energy",    label: "WTI crude (y/y)", value: 9, unit: "%", asOf: "Aug 2025", method: "Front-month y/y", sourceName: "EIA", sourceUrl: "https://www.eia.gov/", pctile5y: 52 },
+  { id: "gasInvVs5y",      group: "energy",    label: "Gasoline inv. vs 5y", value: -1, unit: "%", asOf: "Aug 2025", method: "Deviation vs 5-yr avg", sourceName: "EIA WPSR", sourceUrl: "https://www.eia.gov/petroleum/supply/weekly/", pctile5y: 35 },
+  { id: "distInvVs5y",     group: "energy",    label: "Distillate inv. vs 5y", value: -16, unit: "%", asOf: "Aug 2025", method: "Deviation vs 5-yr avg", sourceName: "EIA WPSR", sourceUrl: "https://www.eia.gov/petroleum/supply/weekly/", pctile5y: 15 },
+
+  // Funding stress inputs
+  { id: "hyOAS",           group: "funding",   label: "High-yield OAS", value: 3.9, unit: "pp", asOf: "Aug 2025", method: "ICE BofA HY OAS", sourceName: "FRED", sourceUrl: "https://fred.stlouisfed.org/series/BAMLH0A0HYM2", pctile5y: 48 },
+  { id: "cpTbill",         group: "funding",   label: "3-mo CP − T-bill", value: 0.18, unit: "pp", asOf: "Aug 2025", method: "Spread", sourceName: "FRED", sourceUrl: "https://fred.stlouisfed.org/", pctile5y: 44 },
+
+  // Supply disruption inputs
+  { id: "gscpi",           group: "supply",    label: "GSCPI", value: -0.25, unit: "z", asOf: "Jul 2025", method: "NY Fed supply chain pressure", sourceName: "NY Fed", sourceUrl: "https://www.newyorkfed.org/research/policy/gscpi", pctile5y: 40 },
+  { id: "supplierDelivery",group: "supply",    label: "Supplier deliveries", value: 56.1, unit: "ISM", asOf: "May 2025", method: "ISM index (>50 = slower)", sourceName: "ISM", sourceUrl: "https://www.ismworld.org/", pctile5y: 70 },
+
+  // Policy tightness input
+  { id: "taylorGap",       group: "policy",    label: "Taylor-rule gap", value: -0.6, unit: "pp", asOf: "Aug 2025", method: "Funds − simple Taylor rule", sourceName: "Atlanta/Cleveland Fed", sourceUrl: "https://www.atlantafed.org/cqer/research/taylor-rule", pctile5y: 45 },
+];
+
+// Metric defs → how to compute + explanations
+const METRIC_DEFS = [
+  {
+    id: "inflationPressure",
+    label: "Inflation pressure",
+    kind: "Heuristic index",
+    explainWhat: "How hot the underlying inflation trend is, beyond noisy monthly prints.",
+    explainWhy: "High pressure raises the odds of sticky inflation and more policy tightening.",
+    howCalc: "Composite of median CPI, trimmed-mean PCE, and breadth (share of items >3% y/y).",
+    group: "inflation",
+    direction: "higher=hotter",
+    weights: { medianCPI: 0.4, trimmedPCE: 0.3, diffusionShare: 0.3 },
+    calibration: { median: 2.5, mad: 0.5 },
+  },
+  {
+    id: "energyShock",
+    label: "Energy shock",
+    kind: "Heuristic index",
+    explainWhat: "Tension in liquid fuels markets from prices and inventories.",
+    explainWhy: "Energy shocks feed headline inflation and can crimp growth.",
+    howCalc: "WTI y/y vs gasoline/distillate deviations from 5-yr average.",
+    group: "energy",
+    direction: "higher=hotter",
+    calibration: { median: 0, mad: 8 },
+    weights: { wtiYoY: 0.4, gasInvVs5y: 0.3, distInvVs5y: 0.3 },
+  },
+  {
+    id: "fundingStress",
+    label: "Funding stress",
+    kind: "Heuristic index",
+    explainWhat: "Stress in credit and short-term funding markets.",
+    explainWhy: "Tighter spreads and funding pressure can foreshadow risk-off and defaults.",
+    howCalc: "HY OAS + CP–T-bill spread.",
+    group: "funding",
+    direction: "higher=hotter",
+    calibration: { median: 3.5, mad: 0.6 },
+    weights: { hyOAS: 0.7, cpTbill: 0.3 },
+  },
+  {
+    id: "supplyDisruption",
+    label: "Supply disruption",
+    kind: "Heuristic index",
+    explainWhat: "Congestion and delays in production/shipping networks.",
+    explainWhy: "Disruptions raise delivery times, prices, and output volatility.",
+    howCalc: "NY Fed GSCPI plus supplier delivery times (ISM).",
+    group: "supply",
+    direction: "higher=hotter",
+    calibration: { median: 0, mad: 0.3 },
+    weights: { gscpi: 0.7, supplierDelivery: 0.3 },
+  },
+  {
+    id: "policyTightness",
+    label: "Policy tightness",
+    kind: "Assumption",
+    explainWhat: "Stance of monetary policy vs a rule-of-thumb benchmark.",
+    explainWhy: "Over-tight policy cools growth; too loose risks re-acceleration.",
+    howCalc: "Funds rate minus a simple Taylor rule (negative = tighter than rule).",
+    group: "policy",
+    direction: "lower=hotter",
+    calibration: { median: 0, mad: 0.75 },
+    weights: { taylorGap: 1.0 },
+  },
+];
+
+const EV = Object.fromEntries(EVIDENCE.map((e) => [e.id, e]));
+function computeMetricScore(def) {
+  const { weights, calibration, direction } = def;
+  let combined = 0, totalW = 0;
+  for (const [id, w] of Object.entries(weights)) {
+    if (!EV[id]) continue;
+    combined += Number(EV[id].value) * w;
+    totalW += w;
+  }
+  const x = totalW ? combined / totalW : 0;
+  return toScore(x, calibration.median, calibration.mad, direction);
+}
+
+/* ============================================================
+   COMPONENTS: ScrollFade, Metric cards, Evidence grid
+   ============================================================ */
+function ScrollFade({ children, className, maxHeight = "calc(100vh - 230px)" }) {
+  const ref = useRef(null);
+  const [atTop, setAtTop] = useState(true);
+  const [atBottom, setAtBottom] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onScroll = () => {
+      setAtTop(el.scrollTop <= 1);
+      setAtBottom(el.scrollHeight - el.clientHeight - el.scrollTop <= 1);
+    };
+    onScroll();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+  const fadeTop = {
+    background: "linear-gradient(180deg, rgba(11,19,38,1) 0%, rgba(11,19,38,0) 100%)",
+  };
+  const fadeBottom = {
+    background: "linear-gradient(0deg, rgba(11,19,38,1) 0%, rgba(11,19,38,0) 100%)",
+  };
+  return (
+    <div className={`scrollfade ${className || ""}`} style={{ position: "relative", maxHeight }}>
+      <div ref={ref} className="scrollfade-body" style={{ overflowY: "auto", paddingRight: 8, maxHeight }}>
+        {children}
+      </div>
+      <div
+        className="scrollfade-fade-top"
+        style={{
+          position: "absolute", left: 0, right: 0, top: 0, height: 18,
+          pointerEvents: "none", opacity: atTop ? 0 : 1, transition: "opacity 150ms", ...fadeTop,
+        }}
+      />
+      <div
+        className="scrollfade-fade-bottom"
+        style={{
+          position: "absolute", left: 0, right: 0, bottom: 0, height: 18,
+          pointerEvents: "none", opacity: atBottom ? 0 : 1, transition: "opacity 150ms", ...fadeBottom,
+        }}
+      />
+    </div>
+  );
+}
+
+function HeadlineMetrics({ onJumpEvidence }) {
+  return (
+    <div className="headline-metrics">
+      {METRIC_DEFS.map((m) => {
+        const score = computeMetricScore(m);
+        const inputs = Object.keys(m.weights).map((id) => EV[id]).filter(Boolean);
+        return (
+          <div key={m.id} className="metric-card2">
+            <div className="metric-top">
+              <div className="metric-kind">{m.kind}</div>
+              <div className="metric-title">{m.label}</div>
+            </div>
+            <div className="metric-score">
+              <div className="metric-score-num">{score}</div>
+              <div className="metric-score-den">/100</div>
+            </div>
+            <details className="metric-explain">
+              <summary>Explain</summary>
+              <div className="metric-explain-body">
+                <div className="metric-explain-block">
+                  <div className="metric-explain-head">What it means</div>
+                  <p>{m.explainWhat}</p>
+                </div>
+                <div className="metric-explain-block">
+                  <div className="metric-explain-head">Why it matters</div>
+                  <p>{m.explainWhy}</p>
+                </div>
+                <div className="metric-explain-block">
+                  <div className="metric-explain-head">How we compute it</div>
+                  <p>{m.howCalc}</p>
+                </div>
+                <div className="metric-explain-block">
+                  <div className="metric-explain-head">Evidence (inputs)</div>
+                  <ul className="evidence-list">
+                    {inputs.map((e) => (
+                      <li key={e.id}>
+                        <strong>{e.label}</strong> — {e.value}{e.unit ? ` ${e.unit}` : ""} <span className="muted">({e.method})</span>
+                        {" · "}
+                        <a href={e.sourceUrl} target="_blank" rel="noreferrer">{e.sourceName}</a>
+                        {e.asOf ? ` · As of ${e.asOf}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <button className="btn-link" onClick={onJumpEvidence}>See all evidence →</button>
+              </div>
+            </details>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function EvidenceGridFull() {
+  return (
+    <div className="evidence-grid2">
+      {EVIDENCE.map((e) => (
+        <div key={e.id} className="evidence-card2">
+          <div className="ev-top">
+            <div className="ev-label">{e.label}</div>
+            <a className="ev-link" href={e.sourceUrl} target="_blank" rel="noreferrer">Source ↗</a>
+          </div>
+          <div className="ev-value">
+            <span className="ev-num">{typeof e.value === "number" ? e.value.toLocaleString() : e.value}</span>
+            {e.unit ? <span className="ev-unit">{e.unit}</span> : null}
+          </div>
+          <div className="ev-meta">{e.method}</div>
+          <div className="ev-meta muted">{e.sourceName}{e.asOf ? ` · As of ${e.asOf}` : ""}</div>
+          <div className="ev-chip">{e.pctile5y !== undefined ? `5y pct: ${Math.round(e.pctile5y)}th` : "—"}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ============================================================
    APP
    ============================================================ */
 export default function App() {
@@ -1307,7 +1543,7 @@ export default function App() {
   const [tab, setTab] = useState("overview"); // "overview" | "evidence"
   const [input, setInput] = useState(
     localStorage.getItem("pf_input") ||
-      "Energy prices jump as shipping reroutes; unions seek wage catch‑up; central bank signals cautious cuts."
+      "Energy prices jump as shipping reroutes; unions seek wage catch-up; central bank signals cautious cuts."
   );
   const [toggles, setToggles] = useState(() => {
     try {
@@ -1466,10 +1702,17 @@ export default function App() {
             ))}
           </div>
 
-          {/* OVERVIEW (short) */}
+          {/* OVERVIEW (scrollable) */}
           {tab === "overview" && (
-            <>
+            <ScrollFade>
               <p className="summary">{selected.summary}</p>
+
+              {/* NEW: Headline Metrics backed by evidence */}
+              <div className="section">
+                <div className="section-title">Key Metrics (0–100, backed by evidence)</div>
+                <HeadlineMetrics onJumpEvidence={() => setTab("evidence")} />
+                <div className="metrics-footnote">Scale 0–100 · Click “Explain” for methods & sources.</div>
+              </div>
 
               <div className="grid2">
                 <div className="section">
@@ -1539,7 +1782,7 @@ export default function App() {
                 <div className="scenarios">
                   <div className="scenario"><div className="sc-title">Baseline</div><p>{selected.scenarios.baseline}</p></div>
                   <div className="scenario"><div className="sc-title">Escalation</div><p>{selected.scenarios.escalation}</p></div>
-                  <div className="scenario"><div className="sc-title">De‑escalation</div><p>{selected.scenarios.deescalation}</p></div>
+                  <div className="scenario"><div className="sc-title">De-escalation</div><p>{selected.scenarios.deescalation}</p></div>
                 </div>
               </div>
 
@@ -1549,19 +1792,18 @@ export default function App() {
                 <div className="report-meta only-print">Generated: {new Date().toLocaleString()} · {BRAND}</div>
               </div>
 
-              {/* Nudge to evidence if available */}
               {(quant.metrics.length + quant.analogs.length) > 0 && (
                 <div className="section no-print">
                   <button className="btn export" onClick={() => setTab("evidence")}>View Evidence →</button>
                 </div>
               )}
-            </>
+            </ScrollFade>
           )}
 
           {/* EVIDENCE (heavy) */}
           {tab === "evidence" && (
             <>
-              {/* Quant Pack */}
+              {/* Quant Pack (existing) */}
               <div className="section quant-pack">
                 <div className="section-title">Similar Conditions & Metrics</div>
 
@@ -1610,6 +1852,12 @@ export default function App() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* NEW: By-the-Numbers Evidence */}
+              <div className="section">
+                <div className="section-title">By-the-Numbers Evidence</div>
+                <EvidenceGridFull />
               </div>
 
               {/* Full Case Examples */}
@@ -1746,12 +1994,47 @@ a{color:inherit}
 .analogs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:12px}
 .analog-card{background:#0e1a33;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px}
 .analog-case{font-weight:700;color:#dbeafe}
-.analog-period{color:var(--muted)}
-.analog-sim{font-size:11px;color:var(--muted)}
+.analog-period{color:#9fb1c9}
+.analog-sim{font-size:11px;color:#9fb1c9}
 .analog-outcome{font-size:12px;margin-top:4px}
 .quant-stats{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;font-size:13px}
-.quant-citations{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
-.quant-citations a{color:var(--muted);text-decoration:underline}
+.quant-citations{font-size:11px;color:#9fb1c9;display:flex;flex-direction:column;gap:4px}
+.quant-citations a{color:#9fb1c9;text-decoration:underline}
+
+/* NEW: Headline metrics on Overview */
+.headline-metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.metric-card2{border:1px solid var(--line);background:#0e1a33;border-radius:12px;padding:10px}
+.metric-top{display:flex;flex-direction:column;gap:2px}
+.metric-kind{color:#9fb1c9;font-size:11px}
+.metric-title{font-weight:800;color:#dbeafe}
+.metric-score{display:flex;align-items:baseline;gap:6px;margin-top:6px}
+.metric-score-num{font-size:28px;font-weight:900}
+.metric-score-den{color:#9fb1c9}
+.metric-explain{margin-top:6px}
+.metric-explain summary{cursor:pointer; color:#9fb1c9}
+.metric-explain[open] summary{color:#cbd5e1}
+.metric-explain-body{margin-top:6px; font-size:13px; color:#d6e1f3}
+.metric-explain-head{font-weight:800; color:#dbeafe; margin-top:6px; margin-bottom:2px}
+.evidence-list{margin:4px 0 8px 16px; padding:0}
+.btn-link{background:none;border:none;color:var(--accent);cursor:pointer;padding:0}
+
+.metrics-footnote{margin-top:6px; color:#9fb1c9; font-size:12px}
+
+/* NEW: Evidence grid */
+.evidence-grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.evidence-card2{border:1px solid var(--line);background:#0e1a33;border-radius:12px;padding:10px}
+.ev-top{display:flex;align-items:center;justify-content:space-between}
+.ev-label{font-size:13px;color:#dbeafe;font-weight:700}
+.ev-link{font-size:12px;color:#9fb1c9;text-decoration:underline}
+.ev-value{display:flex;align-items:baseline;gap:6px;margin-top:6px}
+.ev-num{font-size:22px;font-weight:800}
+.ev-unit{color:#9fb1c9}
+.ev-meta{font-size:12px;color:#d6e1f3;margin-top:2px}
+.ev-meta.muted{color:#9fb1c9}
+.ev-chip{margin-top:6px;font-size:11px;color:#9fb1c9}
+
+/* ScrollFade base (no extra classes needed; fades are inline-styled) */
+.scrollfade{}
 
 /* ---- Print (Export to PDF) ---- */
 @media print{
@@ -1781,4 +2064,3 @@ a{color:inherit}
   .scenarios{grid-template-columns:1fr}
 }
 `;
- 
