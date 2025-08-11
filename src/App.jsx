@@ -1015,6 +1015,164 @@ function chooseMatches(text, limit = 5) {
   }
   return merged;
 }
+/* ============================================================
+   QUANT PACK: Event → Context Vector → Similar Periods
+   ============================================================ */
+
+// ------------- utilities -------------
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const nowISO = () => new Date().toISOString();
+
+function boolScore(cond, yes = 0.8, no = 0.2) { return cond ? yes : no; }
+function wordHit(t, words) { return words.some(w => t.includes(w)); }
+
+// ------------- event + context vector -------------
+function makeEvent(input, playbook, toggles) {
+  const t = (input || "").toLowerCase();
+  const tagSet = new Set(extractTagsFromText(input));
+
+  // Heuristic context features in [0..1]
+  const context = {
+    inflationPressure: clamp01(
+      (wordHit(t, ["inflation","cpi","prices","wage","cost"]) ? 0.7 : 0) +
+      (tagSet.has("economy") ? 0.2 : 0) +
+      (tagSet.has("energy") ? 0.1 : 0)
+    ),
+    energyShock: clamp01(wordHit(t, ["oil","gasoline","diesel","opec","refinery","pipeline"]) ? 0.8 : (tagSet.has("energy") ? 0.5 : 0)),
+    fundingStress: clamp01(
+      (wordHit(t, ["bank","run","liquidity","deposit","cds","spread"]) ? 0.8 : 0) +
+      (tagSet.has("finance") ? 0.2 : 0) +
+      (toggles.finCond === "tight" ? 0.1 : 0)
+    ),
+    protestIntensity: clamp01((tagSet.has("protests") || tagSet.has("politics")) ? 0.6 : 0),
+    conflictRisk: clamp01((tagSet.has("war") || tagSet.has("diplomacy")) ? 0.6 : 0),
+    supplyDisruption: clamp01(
+      (wordHit(t, ["canal","port","shipping","blockade","reroute","container"]) ? 0.8 : 0) +
+      (tagSet.has("supply") ? 0.2 : 0)
+    ),
+    publicHealth: clamp01(tagSet.has("health") ? 0.7 : 0),
+    policyTightness: clamp01(toggles.finCond === "tight" ? 0.75 : 0.35),
+    institutionalStrength: clamp01(toggles.institutions === "strong" ? 0.75 : 0.35),
+    infoVolatility: clamp01(toggles.infoVolatile ? 0.8 : 0.3),
+    mediatorPresence: clamp01(boolScore(!!toggles.mediators))
+  };
+
+  return {
+    id: `evt_${Date.now()}`,
+    timestamp: nowISO(),
+    type: playbook?.id || "unknown",
+    entities: [],             // (optional) later: NER on input
+    rawText: input,
+    context
+  };
+}
+
+// ------------- similarity over historical periods -------------
+// We synthesize a simple embedding from context → vector, then cosine‑match
+const ctxKeys = [
+  "inflationPressure","energyShock","fundingStress","protestIntensity","conflictRisk",
+  "supplyDisruption","publicHealth","policyTightness","institutionalStrength","infoVolatility","mediatorPresence"
+];
+
+function toVec(ctx){ return ctxKeys.map(k => ctx[k] ?? 0); }
+function dot(a,b){ return a.reduce((s,x,i)=>s+x*(b[i]||0),0); }
+function norm(a){ return Math.sqrt(dot(a,a)) || 1; }
+function cosine(a,b){ return dot(a,b)/(norm(a)*norm(b)); }
+
+// Create tiny “case vectors” for each case on a playbook, based on tags
+function caseVectorFromPlaybookTags(pb){
+  // Map tags → emphasis
+  const tagBias = {
+    economy: { inflationPressure: .6, policyTightness: .5 },
+    energy: { energyShock: .8, inflationPressure: .3 },
+    finance: { fundingStress: .8, policyTightness: .3 },
+    protests: { protestIntensity: .8, infoVolatility: .3, mediatorPresence: .2 },
+    war: { conflictRisk: .8, supplyDisruption: .3 },
+    supply: { supplyDisruption: .8, energyShock: .2 },
+    health: { publicHealth: .8, infoVolatility: .3 },
+    technology: {},
+    politics: {},
+    disaster: { supplyDisruption: .4 },
+  };
+  const out = Object.fromEntries(ctxKeys.map(k => [k, 0]));
+  (pb.tags || []).forEach(t => {
+    const bias = tagBias[t]; if (!bias) return;
+    Object.entries(bias).forEach(([k,v]) => { out[k] = Math.max(out[k], v); });
+  });
+  return out;
+}
+
+function buildAnalogsForPlaybook(event, pb){
+  if (!pb || !Array.isArray(pb.cases)) return [];
+  const evtVec = toVec(event.context);
+  return pb.cases.map(c => {
+    const base = caseVectorFromPlaybookTags(pb);
+    // subtle heuristic tweak by year recency
+    const recencyBoost = c.year ? Math.max(0, 1 - Math.abs(new Date().getFullYear() - c.year)/60) * 0.1 : 0;
+    const sim = cosine(evtVec, toVec(base)) + recencyBoost;
+    return {
+      case: c.name,
+      period: String(c.year || "n/a"),
+      similarity: Math.round(Math.max(0, Math.min(1, sim)) * 100), // %
+      outcome: c.result
+    };
+  }).sort((a,b) => b.similarity - a.similarity).slice(0,5);
+}
+
+// ------------- outcome stats from analogs -------------
+function outcomeStats(analogs){
+  if (!analogs.length) return {winRate:null,effectRange:null,medianTime:null,n:0};
+  // Heuristic “positive effect” proxy: look for words that imply stabilization/relief
+  const goodWords = /(stabiliz|cool|recover|contain|restore|diversif|deal|soft landing|audits?)/i;
+  const wins = analogs.filter(a => goodWords.test(a.outcome || "")).length;
+  // very rough magnitude proxy via keywords
+  const effectRange = wins >= Math.ceil(analogs.length/2) ? "moderate improvement likely" : "risk of adverse outcome";
+  // time proxy off typical horizons by theme
+  const medianTime =
+    analogs.some(a => /bank|liquid|deposit|credit|run/i.test(a.case)) ? "weeks"
+    : analogs.some(a => /inflation|energy|supply/i.test(a.case)) ? "1–2 quarters"
+    : analogs.some(a => /protest|election|law|security/i.test(a.case)) ? "weeks–months"
+    : "varies";
+  return {
+    winRate: Math.round((wins/analogs.length)*100),
+    effectRange,
+    medianTime,
+    n: analogs.length
+  };
+}
+
+// ------------- derive present‑tense key metrics (placeholders to be wired to live data later) -------------
+function keyMetricsNow(event, pb){
+  const c = event.context;
+  const mk = (name, value, unit, note) => ({name, value, unit, note});
+  const out = [];
+
+  if (c.inflationPressure > .5) out.push(mk("Inflation pressure", Math.round(c.inflationPressure*100), "/100", "Heuristic index"));
+  if (c.energyShock > .4) out.push(mk("Energy shock", Math.round(c.energyShock*100), "/100", "Heuristic index"));
+  if (c.fundingStress > .4) out.push(mk("Funding stress", Math.round(c.fundingStress*100), "/100", "Heuristic index"));
+  if (c.supplyDisruption > .4) out.push(mk("Supply disruption", Math.round(c.supplyDisruption*100), "/100", "Heuristic index"));
+  if (c.protestIntensity > .4) out.push(mk("Protest intensity", Math.round(c.protestIntensity*100), "/100", "Heuristic index"));
+
+  // Governance toggles always shown (they’re your explicit assumptions)
+  out.push(mk("Policy tightness", Math.round(c.policyTightness*100), "/100", "Assumption"));
+  out.push(mk("Institutional strength", Math.round(c.institutionalStrength*100), "/100", "Assumption"));
+  out.push(mk("Info volatility", Math.round(c.infoVolatility*100), "/100", "Assumption"));
+  out.push(mk("Mediators present", Math.round(c.mediatorPresence*100), "/100", "Assumption"));
+
+  return out.slice(0, 6);
+}
+
+// ------------- bundle everything -------------
+function buildQuantPack(event, pb){
+  const analogs = buildAnalogsForPlaybook(event, pb);
+  const stats = outcomeStats(analogs);
+  const metrics = keyMetricsNow(event, pb);
+  const citations = [
+    // placeholders for now; when you wire APIs, populate with live source links
+    { name: "Methodology", url: "#", source: "PastForward Heuristics v0" }
+  ];
+  return { metrics, analogs, stats, citations };
+}
 
 /* ============================================================
    FUTURE TEXT & RISK
@@ -1217,6 +1375,9 @@ export default function App() {
     matches[0] ||
     filtered[0] ||
     PLAYBOOKS[0];
+  // Build event/context and quant pack tied to the selected playbook
+  const eventObj = useMemo(() => makeEvent(input, selected, toggles), [input, selected, toggles]);
+  const quant = useMemo(() => buildQuantPack(eventObj, selected), [eventObj, selected]);
 
   const dial = riskFromToggles(selected, toggles);
   const futureText = possibleFutureText(selected, toggles);
@@ -1344,6 +1505,70 @@ export default function App() {
               ))}
             </div>
           </div>
+                    {/* Quant Pack */}
+          <div className="section">
+            <div className="section-title">Quant Pack: numbers & similar conditions</div>
+
+            <div className="quant-grid">
+              <div className="q-card">
+                <div className="q-title">Key metrics now</div>
+                {quant.metrics.length === 0 ? (
+                  <div className="muted">No salient metrics detected from your text yet.</div>
+                ) : (
+                  <ul className="q-kv">
+                    {quant.metrics.map((m, i) => (
+                      <li key={i}>
+                        <span className="k">{m.name}</span>
+                        <span className="v">{m.value}{m.unit ? ` ${m.unit}` : ""}</span>
+                        <span className="n">{m.note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="q-card">
+                <div className="q-title">Closest historical periods</div>
+                {quant.analogs.length === 0 ? (
+                  <div className="muted">No close analogs found.</div>
+                ) : (
+                  <div className="analogs">
+                    <div className="a-head"><span>Case</span><span>Period</span><span>Similarity</span><span>Outcome</span></div>
+                    {quant.analogs.map((a, i) => (
+                      <div key={i} className="a-row">
+                        <span>{a.case}</span>
+                        <span>{a.period}</span>
+                        <span>{a.similarity}%</span>
+                        <span className="a-outcome">{a.outcome}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="q-card">
+                <div className="q-title">Outcome stats from analogs</div>
+                {quant.stats.n === 0 ? (
+                  <div className="muted">Insufficient analogs for statistics.</div>
+                ) : (
+                  <ul className="q-stats">
+                    <li><strong>Win rate:</strong> {quant.stats.winRate}% (n={quant.stats.n})</li>
+                    <li><strong>Typical horizon:</strong> {quant.stats.medianTime}</li>
+                    <li><strong>Effect:</strong> {quant.stats.effectRange}</li>
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            <div className="q-citations">
+              <span className="q-ctitle">Citations / Methods:</span>
+              {quant.citations.map((c, i) => (
+                <a key={i} href={c.url} target="_blank" rel="noreferrer">{c.name} — {c.source}</a>
+              ))}
+              <div className="q-note">Note: These are heuristic placeholders. Hook to live data feeds to replace with source‑linked figures.</div>
+            </div>
+          </div>
+
 
           <div className="section">
             <div className="section-title">Scenario Map</div>
@@ -1427,6 +1652,7 @@ const styles = `
   --bg:#0b1220; --panel:#0e172a; --panel2:#0b1326; --line:#1f2937; --text:#e5e7eb; --muted:#9fb1c9;
   --chipText:#083344; --good:#34d399; --warn:#f59e0b; --bad:#ef4444;
   --accent:#93c5fd; --brand:#cfe3ff; --chip:#7dd3fc; --btnText:#a7f3d0;
+  
 }
 .app[data-theme="teal"]{--accent:#5eead4; --brand:#a7f3d0; --chip:#99f6e4; --btnText:#99f6e4;}
 .app[data-theme="violet"]{--accent:#c4b5fd; --brand:#ddd6fe; --chip:#d8b4fe; --btnText:#e9d5ff;}
@@ -1526,5 +1752,43 @@ a{color:inherit}
   .grid2{grid-template-columns:1fr}
   .toggles{grid-template-columns:1fr 1fr}
   .scenarios{grid-template-columns:1fr}
+  /* Quant Pack */
+.quant-grid{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
+}
+.q-card{
+  border:1px solid var(--line); border-radius:12px; background:#0e1a33; padding:10px;
+}
+.q-title{font-weight:800;color:#dbeafe;margin-bottom:6px}
+.q-kv{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.q-kv li{display:grid;grid-template-columns:1.2fr .6fr 1fr;gap:8px;align-items:center}
+.q-kv .k{color:#cbd5e1}
+.q-kv .v{font-weight:800}
+.q-kv .n{color:#9fb1c9;font-size:12px}
+
+.analogs{display:grid;gap:6px}
+.a-head,.a-row{
+  display:grid; grid-template-columns:1.2fr .5fr .5fr 1.8fr; gap:8px;
+}
+.a-head{color:#9fb1c9;font-size:12px}
+.a-outcome{color:#d6e1f3}
+.q-stats{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.q-citations{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.q-ctitle{font-weight:700;color:#cbd5e1}
+.q-note{color:#6b7280;font-size:12px}
+
+.muted{color:#9fb1c9}
+
+/* Print tweaks */
+@media print{
+  .q-card{background:#fff; border-color:#e5e7eb}
+  .a-head{color:#6b7280}
+}
+
+/* Responsive */
+@media (max-width: 1100px){
+  .quant-grid{grid-template-columns:1fr}
+}
+
 }
 `;
