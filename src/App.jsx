@@ -912,7 +912,6 @@ function extractTagsFromText(s) {
 
   Object.entries(map).forEach(([tag, words]) => { if (has(words)) add(tag); });
 
-  // conflict heuristics: simple region & phrasing cues
   const conflictCue =
     /\b(war|fight(s|ing)?|clash(es)?|hostilities|airstrike(s)?|rocket(s)?|shelling|incursion|offensive|ground operation|missile)\b/.test(t) ||
     /\bvs\.?\b/.test(t) ||
@@ -944,7 +943,7 @@ function scorePlaybook(input) {
 function chooseMatchesStrict(text, limit = 5) {
   const f = buildInputFeatures(text);
   const scored = PLAYBOOKS.map((pb) => ({ pb, score: scorePlaybook(f)(pb) }))
-    .filter((x) => x.score >= 6)   // lowered from 8 → more responsive
+    .filter((x) => x.score >= 6)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
   return scored.map((x) => ({ ...x.pb, _score: x.score }));
@@ -981,7 +980,6 @@ function synthesizeFromTemplates(text, limit = 5) {
     });
   }
 
-  // disaster subtypes
   const tl = (text || "").toLowerCase();
   if (tags.includes("disaster")) {
     if (tl.includes("hurricane") || tl.includes("storm") || tl.includes("typhoon")) pushTemplate("disaster_storm");
@@ -1014,164 +1012,6 @@ function chooseMatches(text, limit = 5) {
     }
   }
   return merged;
-}
-/* ============================================================
-   QUANT PACK: Event → Context Vector → Similar Periods
-   ============================================================ */
-
-// ------------- utilities -------------
-const clamp01 = (x) => Math.max(0, Math.min(1, x));
-const nowISO = () => new Date().toISOString();
-
-function boolScore(cond, yes = 0.8, no = 0.2) { return cond ? yes : no; }
-function wordHit(t, words) { return words.some(w => t.includes(w)); }
-
-// ------------- event + context vector -------------
-function makeEvent(input, playbook, toggles) {
-  const t = (input || "").toLowerCase();
-  const tagSet = new Set(extractTagsFromText(input));
-
-  // Heuristic context features in [0..1]
-  const context = {
-    inflationPressure: clamp01(
-      (wordHit(t, ["inflation","cpi","prices","wage","cost"]) ? 0.7 : 0) +
-      (tagSet.has("economy") ? 0.2 : 0) +
-      (tagSet.has("energy") ? 0.1 : 0)
-    ),
-    energyShock: clamp01(wordHit(t, ["oil","gasoline","diesel","opec","refinery","pipeline"]) ? 0.8 : (tagSet.has("energy") ? 0.5 : 0)),
-    fundingStress: clamp01(
-      (wordHit(t, ["bank","run","liquidity","deposit","cds","spread"]) ? 0.8 : 0) +
-      (tagSet.has("finance") ? 0.2 : 0) +
-      (toggles.finCond === "tight" ? 0.1 : 0)
-    ),
-    protestIntensity: clamp01((tagSet.has("protests") || tagSet.has("politics")) ? 0.6 : 0),
-    conflictRisk: clamp01((tagSet.has("war") || tagSet.has("diplomacy")) ? 0.6 : 0),
-    supplyDisruption: clamp01(
-      (wordHit(t, ["canal","port","shipping","blockade","reroute","container"]) ? 0.8 : 0) +
-      (tagSet.has("supply") ? 0.2 : 0)
-    ),
-    publicHealth: clamp01(tagSet.has("health") ? 0.7 : 0),
-    policyTightness: clamp01(toggles.finCond === "tight" ? 0.75 : 0.35),
-    institutionalStrength: clamp01(toggles.institutions === "strong" ? 0.75 : 0.35),
-    infoVolatility: clamp01(toggles.infoVolatile ? 0.8 : 0.3),
-    mediatorPresence: clamp01(boolScore(!!toggles.mediators))
-  };
-
-  return {
-    id: `evt_${Date.now()}`,
-    timestamp: nowISO(),
-    type: playbook?.id || "unknown",
-    entities: [],             // (optional) later: NER on input
-    rawText: input,
-    context
-  };
-}
-
-// ------------- similarity over historical periods -------------
-// We synthesize a simple embedding from context → vector, then cosine‑match
-const ctxKeys = [
-  "inflationPressure","energyShock","fundingStress","protestIntensity","conflictRisk",
-  "supplyDisruption","publicHealth","policyTightness","institutionalStrength","infoVolatility","mediatorPresence"
-];
-
-function toVec(ctx){ return ctxKeys.map(k => ctx[k] ?? 0); }
-function dot(a,b){ return a.reduce((s,x,i)=>s+x*(b[i]||0),0); }
-function norm(a){ return Math.sqrt(dot(a,a)) || 1; }
-function cosine(a,b){ return dot(a,b)/(norm(a)*norm(b)); }
-
-// Create tiny “case vectors” for each case on a playbook, based on tags
-function caseVectorFromPlaybookTags(pb){
-  // Map tags → emphasis
-  const tagBias = {
-    economy: { inflationPressure: .6, policyTightness: .5 },
-    energy: { energyShock: .8, inflationPressure: .3 },
-    finance: { fundingStress: .8, policyTightness: .3 },
-    protests: { protestIntensity: .8, infoVolatility: .3, mediatorPresence: .2 },
-    war: { conflictRisk: .8, supplyDisruption: .3 },
-    supply: { supplyDisruption: .8, energyShock: .2 },
-    health: { publicHealth: .8, infoVolatility: .3 },
-    technology: {},
-    politics: {},
-    disaster: { supplyDisruption: .4 },
-  };
-  const out = Object.fromEntries(ctxKeys.map(k => [k, 0]));
-  (pb.tags || []).forEach(t => {
-    const bias = tagBias[t]; if (!bias) return;
-    Object.entries(bias).forEach(([k,v]) => { out[k] = Math.max(out[k], v); });
-  });
-  return out;
-}
-
-function buildAnalogsForPlaybook(event, pb){
-  if (!pb || !Array.isArray(pb.cases)) return [];
-  const evtVec = toVec(event.context);
-  return pb.cases.map(c => {
-    const base = caseVectorFromPlaybookTags(pb);
-    // subtle heuristic tweak by year recency
-    const recencyBoost = c.year ? Math.max(0, 1 - Math.abs(new Date().getFullYear() - c.year)/60) * 0.1 : 0;
-    const sim = cosine(evtVec, toVec(base)) + recencyBoost;
-    return {
-      case: c.name,
-      period: String(c.year || "n/a"),
-      similarity: Math.round(Math.max(0, Math.min(1, sim)) * 100), // %
-      outcome: c.result
-    };
-  }).sort((a,b) => b.similarity - a.similarity).slice(0,5);
-}
-
-// ------------- outcome stats from analogs -------------
-function outcomeStats(analogs){
-  if (!analogs.length) return {winRate:null,effectRange:null,medianTime:null,n:0};
-  // Heuristic “positive effect” proxy: look for words that imply stabilization/relief
-  const goodWords = /(stabiliz|cool|recover|contain|restore|diversif|deal|soft landing|audits?)/i;
-  const wins = analogs.filter(a => goodWords.test(a.outcome || "")).length;
-  // very rough magnitude proxy via keywords
-  const effectRange = wins >= Math.ceil(analogs.length/2) ? "moderate improvement likely" : "risk of adverse outcome";
-  // time proxy off typical horizons by theme
-  const medianTime =
-    analogs.some(a => /bank|liquid|deposit|credit|run/i.test(a.case)) ? "weeks"
-    : analogs.some(a => /inflation|energy|supply/i.test(a.case)) ? "1–2 quarters"
-    : analogs.some(a => /protest|election|law|security/i.test(a.case)) ? "weeks–months"
-    : "varies";
-  return {
-    winRate: Math.round((wins/analogs.length)*100),
-    effectRange,
-    medianTime,
-    n: analogs.length
-  };
-}
-
-// ------------- derive present‑tense key metrics (placeholders to be wired to live data later) -------------
-function keyMetricsNow(event, pb){
-  const c = event.context;
-  const mk = (name, value, unit, note) => ({name, value, unit, note});
-  const out = [];
-
-  if (c.inflationPressure > .5) out.push(mk("Inflation pressure", Math.round(c.inflationPressure*100), "/100", "Heuristic index"));
-  if (c.energyShock > .4) out.push(mk("Energy shock", Math.round(c.energyShock*100), "/100", "Heuristic index"));
-  if (c.fundingStress > .4) out.push(mk("Funding stress", Math.round(c.fundingStress*100), "/100", "Heuristic index"));
-  if (c.supplyDisruption > .4) out.push(mk("Supply disruption", Math.round(c.supplyDisruption*100), "/100", "Heuristic index"));
-  if (c.protestIntensity > .4) out.push(mk("Protest intensity", Math.round(c.protestIntensity*100), "/100", "Heuristic index"));
-
-  // Governance toggles always shown (they’re your explicit assumptions)
-  out.push(mk("Policy tightness", Math.round(c.policyTightness*100), "/100", "Assumption"));
-  out.push(mk("Institutional strength", Math.round(c.institutionalStrength*100), "/100", "Assumption"));
-  out.push(mk("Info volatility", Math.round(c.infoVolatility*100), "/100", "Assumption"));
-  out.push(mk("Mediators present", Math.round(c.mediatorPresence*100), "/100", "Assumption"));
-
-  return out.slice(0, 6);
-}
-
-// ------------- bundle everything -------------
-function buildQuantPack(event, pb){
-  const analogs = buildAnalogsForPlaybook(event, pb);
-  const stats = outcomeStats(analogs);
-  const metrics = keyMetricsNow(event, pb);
-  const citations = [
-    // placeholders for now; when you wire APIs, populate with live source links
-    { name: "Methodology", url: "#", source: "PastForward Heuristics v0" }
-  ];
-  return { metrics, analogs, stats, citations };
 }
 
 /* ============================================================
@@ -1319,10 +1159,152 @@ function riskFromToggles(pb, t) {
 }
 
 /* ============================================================
+   QUANT PACK: Event → Context Vector → Similar Periods
+   ============================================================ */
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const nowISO = () => new Date().toISOString();
+function boolScore(cond, yes = 0.8, no = 0.2) { return cond ? yes : no; }
+function wordHit(t, words) { return words.some(w => t.includes(w)); }
+
+function makeEvent(input, playbook, toggles) {
+  const t = (input || "").toLowerCase();
+  const tagSet = new Set(extractTagsFromText(input));
+
+  const context = {
+    inflationPressure: clamp01(
+      (wordHit(t, ["inflation","cpi","prices","wage","cost"]) ? 0.7 : 0) +
+      (tagSet.has("economy") ? 0.2 : 0) +
+      (tagSet.has("energy") ? 0.1 : 0)
+    ),
+    energyShock: clamp01(wordHit(t, ["oil","gasoline","diesel","opec","refinery","pipeline"]) ? 0.8 : (tagSet.has("energy") ? 0.5 : 0)),
+    fundingStress: clamp01(
+      (wordHit(t, ["bank","run","liquidity","deposit","cds","spread"]) ? 0.8 : 0) +
+      (tagSet.has("finance") ? 0.2 : 0) +
+      (toggles.finCond === "tight" ? 0.1 : 0)
+    ),
+    protestIntensity: clamp01((tagSet.has("protests") || tagSet.has("politics")) ? 0.6 : 0),
+    conflictRisk: clamp01((tagSet.has("war") || tagSet.has("diplomacy")) ? 0.6 : 0),
+    supplyDisruption: clamp01(
+      (wordHit(t, ["canal","port","shipping","blockade","reroute","container"]) ? 0.8 : 0) +
+      (tagSet.has("supply") ? 0.2 : 0)
+    ),
+    publicHealth: clamp01(tagSet.has("health") ? 0.7 : 0),
+    policyTightness: clamp01(toggles.finCond === "tight" ? 0.75 : 0.35),
+    institutionalStrength: clamp01(toggles.institutions === "strong" ? 0.75 : 0.35),
+    infoVolatility: clamp01(toggles.infoVolatile ? 0.8 : 0.3),
+    mediatorPresence: clamp01(boolScore(!!toggles.mediators))
+  };
+
+  return {
+    id: `evt_${Date.now()}`,
+    timestamp: nowISO(),
+    type: playbook?.id || "unknown",
+    entities: [],
+    rawText: input,
+    context
+  };
+}
+
+const ctxKeys = [
+  "inflationPressure","energyShock","fundingStress","protestIntensity","conflictRisk",
+  "supplyDisruption","publicHealth","policyTightness","institutionalStrength","infoVolatility","mediatorPresence"
+];
+
+function toVec(ctx){ return ctxKeys.map(k => ctx[k] ?? 0); }
+function dot(a,b){ return a.reduce((s,x,i)=>s+x*(b[i]||0),0); }
+function norm(a){ return Math.sqrt(dot(a,a)) || 1; }
+function cosine(a,b){ return dot(a,b)/(norm(a)*norm(b)); }
+
+function caseVectorFromPlaybookTags(pb){
+  const tagBias = {
+    economy: { inflationPressure: .6, policyTightness: .5 },
+    energy: { energyShock: .8, inflationPressure: .3 },
+    finance: { fundingStress: .8, policyTightness: .3 },
+    protests: { protestIntensity: .8, infoVolatility: .3, mediatorPresence: .2 },
+    war: { conflictRisk: .8, supplyDisruption: .3 },
+    supply: { supplyDisruption: .8, energyShock: .2 },
+    health: { publicHealth: .8, infoVolatility: .3 },
+    technology: {},
+    politics: {},
+    disaster: { supplyDisruption: .4 },
+  };
+  const out = Object.fromEntries(ctxKeys.map(k => [k, 0]));
+  (pb.tags || []).forEach(t => {
+    const bias = tagBias[t]; if (!bias) return;
+    Object.entries(bias).forEach(([k,v]) => { out[k] = Math.max(out[k], v); });
+  });
+  return out;
+}
+
+function buildAnalogsForPlaybook(event, pb){
+  if (!pb || !Array.isArray(pb.cases)) return [];
+  const evtVec = toVec(event.context);
+  return pb.cases.map(c => {
+    const base = caseVectorFromPlaybookTags(pb);
+    const recencyBoost = c.year ? Math.max(0, 1 - Math.abs(new Date().getFullYear() - c.year)/60) * 0.1 : 0;
+    const sim = cosine(evtVec, toVec(base)) + recencyBoost;
+    return {
+      case: c.name,
+      period: String(c.year || "n/a"),
+      similarity: Math.round(Math.max(0, Math.min(1, sim)) * 100),
+      outcome: c.result
+    };
+  }).sort((a,b) => b.similarity - a.similarity).slice(0,5);
+}
+
+function outcomeStats(analogs){
+  if (!analogs.length) return {winRate:null,effectRange:null,medianTime:null,n:0};
+  const goodWords = /(stabiliz|cool|recover|contain|restore|diversif|deal|soft landing|audits?)/i;
+  const wins = analogs.filter(a => goodWords.test(a.outcome || "")).length;
+  const effectRange = wins >= Math.ceil(analogs.length/2) ? "moderate improvement likely" : "risk of adverse outcome";
+  const medianTime =
+    analogs.some(a => /bank|liquid|deposit|credit|run/i.test(a.case)) ? "weeks"
+    : analogs.some(a => /inflation|energy|supply/i.test(a.case)) ? "1–2 quarters"
+    : analogs.some(a => /protest|election|law|security/i.test(a.case)) ? "weeks–months"
+    : "varies";
+  return {
+    winRate: Math.round((wins/analogs.length)*100),
+    effectRange,
+    medianTime,
+    n: analogs.length
+  };
+}
+
+function keyMetricsNow(event, pb){
+  const c = event.context;
+  const mk = (name, value, unit, note) => ({name, value, unit, note});
+  const out = [];
+
+  if (c.inflationPressure > .5) out.push(mk("Inflation pressure", Math.round(c.inflationPressure*100), "/100", "Heuristic index"));
+  if (c.energyShock > .4) out.push(mk("Energy shock", Math.round(c.energyShock*100), "/100", "Heuristic index"));
+  if (c.fundingStress > .4) out.push(mk("Funding stress", Math.round(c.fundingStress*100), "/100", "Heuristic index"));
+  if (c.supplyDisruption > .4) out.push(mk("Supply disruption", Math.round(c.supplyDisruption*100), "/100", "Heuristic index"));
+  if (c.protestIntensity > .4) out.push(mk("Protest intensity", Math.round(c.protestIntensity*100), "/100", "Heuristic index"));
+
+  out.push(mk("Policy tightness", Math.round(c.policyTightness*100), "/100", "Assumption"));
+  out.push(mk("Institutional strength", Math.round(c.institutionalStrength*100), "/100", "Assumption"));
+  out.push(mk("Info volatility", Math.round(c.infoVolatility*100), "/100", "Assumption"));
+  out.push(mk("Mediators present", Math.round(c.mediatorPresence*100), "/100", "Assumption"));
+
+  return out.slice(0, 6);
+}
+
+function buildQuantPack(event, pb){
+  const analogs = buildAnalogsForPlaybook(event, pb);
+  const stats = outcomeStats(analogs);
+  const metrics = keyMetricsNow(event, pb);
+  const citations = [
+    { name: "Methodology", url: "#", source: "PastForward Heuristics v0" }
+  ];
+  return { metrics, analogs, stats, citations };
+}
+
+/* ============================================================
    APP
    ============================================================ */
 export default function App() {
   const [theme, setTheme] = useState("blue");
+  const [tab, setTab] = useState("overview"); // "overview" | "evidence"
   const [input, setInput] = useState(
     localStorage.getItem("pf_input") ||
       "Energy prices jump as shipping reroutes; unions seek wage catch‑up; central bank signals cautious cuts."
@@ -1340,18 +1322,17 @@ export default function App() {
       return { institutions: "strong", mediators: true, infoVolatile: false, supplySlack: "low", finCond: "tight" };
     }
   });
-  const [selectedId, setSelectedId] = useState(null);    // library selection
-  const [selectedObj, setSelectedObj] = useState(null);  // match (incl. synthetic) selection
+  const [selectedId, setSelectedId] = useState(null);
+  const [selectedObj, setSelectedObj] = useState(null);
   const [query, setQuery] = useState("");
   const reportRef = useRef(null);
 
   useEffect(() => localStorage.setItem("pf_input", input), [input]);
   useEffect(() => localStorage.setItem("pf_toggles", JSON.stringify(toggles)), [toggles]);
-  useEffect(() => { setSelectedObj(null); setSelectedId(null); }, [input]); // reset selection when typing
+  useEffect(() => { setSelectedObj(null); setSelectedId(null); }, [input]);
 
   const matches = useMemo(() => chooseMatches(input, 5), [input]);
 
-  // If a pinned match no longer appears, jump to the top current match
   useEffect(() => {
     if (selectedObj && !matches.find(m => m.id === selectedObj.id)) {
       setSelectedObj(matches[0] || null);
@@ -1375,13 +1356,14 @@ export default function App() {
     matches[0] ||
     filtered[0] ||
     PLAYBOOKS[0];
-  // Build event/context and quant pack tied to the selected playbook
-  const eventObj = useMemo(() => makeEvent(input, selected, toggles), [input, selected, toggles]);
-  const quant = useMemo(() => buildQuantPack(eventObj, selected), [eventObj, selected]);
 
   const dial = riskFromToggles(selected, toggles);
   const futureText = possibleFutureText(selected, toggles);
   const onExportPDF = () => window.print();
+
+  // Build event/context and quant pack tied to the selected playbook
+  const eventObj = useMemo(() => makeEvent(input, selected, toggles), [input, selected, toggles]);
+  const quant = useMemo(() => buildQuantPack(eventObj, selected), [eventObj, selected]);
 
   return (
     <div className="app" data-theme={theme}>
@@ -1471,169 +1453,180 @@ export default function App() {
             <div className="era">{selected.era}</div>
           </div>
 
-          <p className="summary">{selected.summary}</p>
-
-          <div className="section">
-            <div className="section-title">Historical Outcome</div>
-            <p>{selected.outcome}</p>
+          {/* Tabs */}
+          <div className="tabs no-print">
+            {["overview","evidence"].map(t => (
+              <button
+                key={t}
+                className={`tab ${tab === t ? "active" : ""}`}
+                onClick={() => setTab(t)}
+              >
+                {t === "overview" ? "Overview" : "Evidence"}
+              </button>
+            ))}
           </div>
 
-          <div className="grid2">
-            <div className="section">
-              <div className="section-title">Signals</div>
-              <ul className="bullets">
-                {selected.signals.map((s, i) => <li key={i}>{s}</li>)}
-              </ul>
-            </div>
-            <div className="section">
-              <div className="section-title">What to Watch</div>
-              <ul className="bullets">
-                {selected.whatToWatch.map((s, i) => <li key={i}>{s}</li>)}
-              </ul>
-            </div>
-          </div>
+          {/* OVERVIEW (short) */}
+          {tab === "overview" && (
+            <>
+              <p className="summary">{selected.summary}</p>
 
-          <div className="section">
-            <div className="section-title">Case Examples</div>
-            <div className="cases">
-              {selected.cases.map((c, i) => (
-                <div className="case" key={i}>
-                  <div className="case-name">{c.name}</div>
-                  <div className="case-year">{c.year}</div>
-                  <div className="case-outcome">{c.result}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-                    {/* Quant Pack */}
-          <div className="section">
-            <div className="section-title">Quant Pack: numbers & similar conditions</div>
-
-            <div className="quant-grid">
-              <div className="q-card">
-                <div className="q-title">Key metrics now</div>
-                {quant.metrics.length === 0 ? (
-                  <div className="muted">No salient metrics detected from your text yet.</div>
-                ) : (
-                  <ul className="q-kv">
-                    {quant.metrics.map((m, i) => (
-                      <li key={i}>
-                        <span className="k">{m.name}</span>
-                        <span className="v">{m.value}{m.unit ? ` ${m.unit}` : ""}</span>
-                        <span className="n">{m.note}</span>
-                      </li>
-                    ))}
+              <div className="grid2">
+                <div className="section">
+                  <div className="section-title">Signals (top)</div>
+                  <ul className="bullets clamp-6">
+                    {selected.signals.slice(0,6).map((s, i) => <li key={i}>{s}</li>)}
                   </ul>
-                )}
+                  {selected.signals.length > 6 && <details className="more"><summary>Show all signals</summary>
+                    <ul className="bullets">{selected.signals.map((s, i) => <li key={i}>{s}</li>)}</ul>
+                  </details>}
+                </div>
+
+                <div className="section">
+                  <div className="section-title">What to Watch (top)</div>
+                  <ul className="bullets clamp-6">
+                    {selected.whatToWatch.slice(0,6).map((s, i) => <li key={i}>{s}</li>)}
+                  </ul>
+                  {selected.whatToWatch.length > 6 && <details className="more"><summary>Show all</summary>
+                    <ul className="bullets">{selected.whatToWatch.map((s, i) => <li key={i}>{s}</li>)}</ul>
+                  </details>}
+                </div>
               </div>
 
-              <div className="q-card">
-                <div className="q-title">Closest historical periods</div>
-                {quant.analogs.length === 0 ? (
-                  <div className="muted">No close analogs found.</div>
-                ) : (
-                  <div className="analogs">
-                    <div className="a-head"><span>Case</span><span>Period</span><span>Similarity</span><span>Outcome</span></div>
-                    {quant.analogs.map((a, i) => (
-                      <div key={i} className="a-row">
-                        <span>{a.case}</span>
-                        <span>{a.period}</span>
-                        <span>{a.similarity}%</span>
-                        <span className="a-outcome">{a.outcome}</span>
+              <div className="section">
+                <div className="section-title">Tailor for Today</div>
+                <div className="toggles no-print">
+                  <div className="toggle">
+                    <label>Institutions</label>
+                    <select value={toggles.institutions} onChange={(e) => setToggles({ ...toggles, institutions: e.target.value })}>
+                      <option value="strong">Strong</option><option value="weak">Weak</option>
+                    </select>
+                  </div>
+                  <div className="toggle">
+                    <label>External mediators present</label>
+                    <input type="checkbox" checked={toggles.mediators} onChange={(e) => setToggles({ ...toggles, mediators: e.target.checked })}/>
+                  </div>
+                  <div className="toggle">
+                    <label>Info environment volatile</label>
+                    <input type="checkbox" checked={toggles.infoVolatile} onChange={(e) => setToggles({ ...toggles, infoVolatile: e.target.checked })}/>
+                  </div>
+                  <div className="toggle">
+                    <label>Supply slack</label>
+                    <select value={toggles.supplySlack} onChange={(e) => setToggles({ ...toggles, supplySlack: e.target.value })}>
+                      <option value="high">High</option><option value="low">Low</option>
+                    </select>
+                  </div>
+                  <div className="toggle">
+                    <label>Financial conditions</label>
+                    <select value={toggles.finCond} onChange={(e) => setToggles({ ...toggles, finCond: e.target.value })}>
+                      <option value="loose">Loose</option><option value="tight">Tight</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="risk">
+                  <div className="risk-head"><span>Risk dial</span><span className="risk-num">{dial}</span></div>
+                  <div className="bar"><div className="bar-fill" style={{ width: `${dial}%` }} /></div>
+                  <div className="print-toggles only-print">
+                    <strong>Assumptions:</strong>{" "}
+                    Institutions: {toggles.institutions}; Mediators: {toggles.mediators ? "Yes" : "No"}; Info volatility: {toggles.infoVolatile ? "High" : "Normal"}; Supply slack: {toggles.supplySlack}; Financial conditions: {toggles.finCond}.
+                  </div>
+                </div>
+              </div>
+
+              <div className="section">
+                <div className="section-title">Scenario Map</div>
+                <div className="scenarios">
+                  <div className="scenario"><div className="sc-title">Baseline</div><p>{selected.scenarios.baseline}</p></div>
+                  <div className="scenario"><div className="sc-title">Escalation</div><p>{selected.scenarios.escalation}</p></div>
+                  <div className="scenario"><div className="sc-title">De‑escalation</div><p>{selected.scenarios.deescalation}</p></div>
+                </div>
+              </div>
+
+              <div className="section">
+                <div className="section-title">Possible Future (applied)</div>
+                <p>{futureText}</p>
+                <div className="report-meta only-print">Generated: {new Date().toLocaleString()} · {BRAND}</div>
+              </div>
+
+              {/* Nudge to evidence if available */}
+              {(quant.metrics.length + quant.analogs.length) > 0 && (
+                <div className="section no-print">
+                  <button className="btn export" onClick={() => setTab("evidence")}>View Evidence →</button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* EVIDENCE (heavy) */}
+          {tab === "evidence" && (
+            <>
+              {/* Quant Pack */}
+              <div className="section quant-pack">
+                <div className="section-title">Similar Conditions & Metrics</div>
+
+                {quant.metrics.length > 0 && (
+                  <div className="quant-metrics">
+                    {quant.metrics.map((m, i) => (
+                      <div key={i} className="metric-card">
+                        <div className="metric-name">{m.name}</div>
+                        <div className="metric-value">{m.value}{m.unit ? ` ${m.unit}` : ""}</div>
+                        <div className="metric-note">{m.note}</div>
                       </div>
+                    ))}
+                  </div>
+                )}
+
+                {quant.analogs.length > 0 && (
+                  <div className="quant-analogs">
+                    <div className="analogs-title">Closest historical periods</div>
+                    <div className="analogs-grid">
+                      {quant.analogs.map((a, i) => (
+                        <div key={i} className="analog-card">
+                          <div className="analog-case">{a.case}</div>
+                          <div className="analog-period">{a.period}</div>
+                          <div className="analog-sim">{a.similarity}% match</div>
+                          <div className="analog-outcome">{a.outcome}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {quant.stats.n > 0 && (
+                  <div className="quant-stats">
+                    <div><strong>Win rate:</strong> {quant.stats.winRate}%</div>
+                    <div><strong>Typical horizon:</strong> {quant.stats.medianTime}</div>
+                    <div><strong>Effect:</strong> {quant.stats.effectRange}</div>
+                  </div>
+                )}
+
+                {quant.citations.length > 0 && (
+                  <div className="quant-citations">
+                    {quant.citations.map((c, i) => (
+                      <a key={i} href={c.url} target="_blank" rel="noreferrer">
+                        {c.name} — {c.source}
+                      </a>
                     ))}
                   </div>
                 )}
               </div>
 
-              <div className="q-card">
-                <div className="q-title">Outcome stats from analogs</div>
-                {quant.stats.n === 0 ? (
-                  <div className="muted">Insufficient analogs for statistics.</div>
-                ) : (
-                  <ul className="q-stats">
-                    <li><strong>Win rate:</strong> {quant.stats.winRate}% (n={quant.stats.n})</li>
-                    <li><strong>Typical horizon:</strong> {quant.stats.medianTime}</li>
-                    <li><strong>Effect:</strong> {quant.stats.effectRange}</li>
-                  </ul>
-                )}
+              {/* Full Case Examples */}
+              <div className="section">
+                <div className="section-title">Case Examples (full)</div>
+                <div className="cases">
+                  {selected.cases.map((c, i) => (
+                    <div className="case" key={i}>
+                      <div className="case-name">{c.name}</div>
+                      <div className="case-year">{c.year}</div>
+                      <div className="case-outcome">{c.result}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-
-            <div className="q-citations">
-              <span className="q-ctitle">Citations / Methods:</span>
-              {quant.citations.map((c, i) => (
-                <a key={i} href={c.url} target="_blank" rel="noreferrer">{c.name} — {c.source}</a>
-              ))}
-              <div className="q-note">Note: These are heuristic placeholders. Hook to live data feeds to replace with source‑linked figures.</div>
-            </div>
-          </div>
-
-
-          <div className="section">
-            <div className="section-title">Scenario Map</div>
-            <div className="scenarios">
-              <div className="scenario">
-                <div className="sc-title">Baseline</div>
-                <p>{selected.scenarios.baseline}</p>
-              </div>
-              <div className="scenario">
-                <div className="sc-title">Escalation</div>
-                <p>{selected.scenarios.escalation}</p>
-              </div>
-              <div className="scenario">
-                <div className="sc-title">De‑escalation</div>
-                <p>{selected.scenarios.deescalation}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="section">
-            <div className="section-title">Tailor for Today</div>
-            <div className="toggles no-print">
-              <div className="toggle">
-                <label>Institutions</label>
-                <select value={toggles.institutions} onChange={(e) => setToggles({ ...toggles, institutions: e.target.value })}>
-                  <option value="strong">Strong</option><option value="weak">Weak</option>
-                </select>
-              </div>
-              <div className="toggle">
-                <label>External mediators present</label>
-                <input type="checkbox" checked={toggles.mediators} onChange={(e) => setToggles({ ...toggles, mediators: e.target.checked })}/>
-              </div>
-              <div className="toggle">
-                <label>Info environment volatile</label>
-                <input type="checkbox" checked={toggles.infoVolatile} onChange={(e) => setToggles({ ...toggles, infoVolatile: e.target.checked })}/>
-              </div>
-              <div className="toggle">
-                <label>Supply slack</label>
-                <select value={toggles.supplySlack} onChange={(e) => setToggles({ ...toggles, supplySlack: e.target.value })}>
-                  <option value="high">High</option><option value="low">Low</option>
-                </select>
-              </div>
-              <div className="toggle">
-                <label>Financial conditions</label>
-                <select value={toggles.finCond} onChange={(e) => setToggles({ ...toggles, finCond: e.target.value })}>
-                  <option value="loose">Loose</option><option value="tight">Tight</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="risk">
-              <div className="risk-head"><span>Risk dial</span><span className="risk-num">{dial}</span></div>
-              <div className="bar"><div className="bar-fill" style={{ width: `${dial}%` }} /></div>
-              <div className="print-toggles only-print">
-                <strong>Assumptions:</strong>{" "}
-                Institutions: {toggles.institutions}; Mediators: {toggles.mediators ? "Yes" : "No"}; Info volatility: {toggles.infoVolatile ? "High" : "Normal"}; Supply slack: {toggles.supplySlack}; Financial conditions: {toggles.finCond}.
-              </div>
-            </div>
-          </div>
-
-          <div className="section">
-            <div className="section-title">Possible Future (applied to your situation)</div>
-            <p>{futureText}</p>
-            <div className="report-meta only-print">Generated: {new Date().toLocaleString()} · {BRAND}</div>
-          </div>
+            </>
+          )}
         </section>
       </div>
 
@@ -1652,7 +1645,6 @@ const styles = `
   --bg:#0b1220; --panel:#0e172a; --panel2:#0b1326; --line:#1f2937; --text:#e5e7eb; --muted:#9fb1c9;
   --chipText:#083344; --good:#34d399; --warn:#f59e0b; --bad:#ef4444;
   --accent:#93c5fd; --brand:#cfe3ff; --chip:#7dd3fc; --btnText:#a7f3d0;
-  
 }
 .app[data-theme="teal"]{--accent:#5eead4; --brand:#a7f3d0; --chip:#99f6e4; --btnText:#99f6e4;}
 .app[data-theme="violet"]{--accent:#c4b5fd; --brand:#ddd6fe; --chip:#d8b4fe; --btnText:#e9d5ff;}
@@ -1729,6 +1721,38 @@ a{color:inherit}
 
 .foot{display:flex;gap:8px;align-items:center;justify-content:center;color:var(--muted);font-size:12px;padding:16px 0 24px}
 
+/* Tabs */
+.tabs{display:flex;gap:8px;margin-top:4px}
+.tab{border:1px solid var(--line);background:#0e1a33;color:#dbeafe;border-radius:10px;padding:6px 10px;cursor:pointer}
+.tab.active{outline:2px solid var(--accent)}
+
+/* Clamp long lists in Overview */
+.clamp-6{max-height:9em; overflow: hidden; position: relative;}
+.clamp-6::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:24px;
+  background:linear-gradient(180deg, rgba(14,26,51,0) 0%, rgba(14,26,51,1) 100%);
+}
+.more summary{cursor:pointer; color:#9fb1c9; margin-top:6px}
+.more[open] summary{color:#cbd5e1}
+
+/* Quant Pack */
+.quant-pack{margin-top:16px}
+.quant-metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:12px}
+.metric-card{background:#0e1a33;border:1px solid var(--line);border-radius:8px;padding:8px}
+.metric-name{font-size:12px;color:var(--muted)}
+.metric-value{font-size:16px;font-weight:700}
+.metric-note{font-size:11px;color:var(--muted)}
+.quant-analogs .analogs-title{font-weight:700;margin-bottom:6px}
+.analogs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:12px}
+.analog-card{background:#0e1a33;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px}
+.analog-case{font-weight:700;color:#dbeafe}
+.analog-period{color:var(--muted)}
+.analog-sim{font-size:11px;color:var(--muted)}
+.analog-outcome{font-size:12px;margin-top:4px}
+.quant-stats{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;font-size:13px}
+.quant-citations{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.quant-citations a{color:var(--muted);text-decoration:underline}
+
 /* ---- Print (Export to PDF) ---- */
 @media print{
   :root{color-scheme:light;}
@@ -1744,6 +1768,9 @@ a{color:inherit}
   .scenario{background:#ffffff; border-color:#e5e7eb}
   .bar{background:#f3f4f6; border-color:#e5e7eb}
   .bar-fill{background:linear-gradient(90deg,#10b981,#f59e0b,#ef4444)}
+  .tabs{display:none !important;}
+  .clamp-6{max-height:none; overflow:visible}
+  .clamp-6::after{display:none}
   @page{ size:auto; margin:18mm; }
 }
 
@@ -1752,43 +1779,6 @@ a{color:inherit}
   .grid2{grid-template-columns:1fr}
   .toggles{grid-template-columns:1fr 1fr}
   .scenarios{grid-template-columns:1fr}
-  /* Quant Pack */
-.quant-grid{
-  display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
-}
-.q-card{
-  border:1px solid var(--line); border-radius:12px; background:#0e1a33; padding:10px;
-}
-.q-title{font-weight:800;color:#dbeafe;margin-bottom:6px}
-.q-kv{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.q-kv li{display:grid;grid-template-columns:1.2fr .6fr 1fr;gap:8px;align-items:center}
-.q-kv .k{color:#cbd5e1}
-.q-kv .v{font-weight:800}
-.q-kv .n{color:#9fb1c9;font-size:12px}
-
-.analogs{display:grid;gap:6px}
-.a-head,.a-row{
-  display:grid; grid-template-columns:1.2fr .5fr .5fr 1.8fr; gap:8px;
-}
-.a-head{color:#9fb1c9;font-size:12px}
-.a-outcome{color:#d6e1f3}
-.q-stats{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.q-citations{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.q-ctitle{font-weight:700;color:#cbd5e1}
-.q-note{color:#6b7280;font-size:12px}
-
-.muted{color:#9fb1c9}
-
-/* Print tweaks */
-@media print{
-  .q-card{background:#fff; border-color:#e5e7eb}
-  .a-head{color:#6b7280}
-}
-
-/* Responsive */
-@media (max-width: 1100px){
-  .quant-grid{grid-template-columns:1fr}
-}
-
 }
 `;
+ 
