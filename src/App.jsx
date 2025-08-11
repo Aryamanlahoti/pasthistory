@@ -1159,7 +1159,7 @@ function riskFromToggles(pb, t) {
 }
 
 /* ============================================================
-   QUANT PACK: Event → Context Vector → Similar Periods
+   QUANT PACK (legacy, tag-based)
    ============================================================ */
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 const nowISO = () => new Date().toISOString();
@@ -1293,49 +1293,45 @@ function buildQuantPack(event, pb){
   const analogs = buildAnalogsForPlaybook(event, pb);
   const stats = outcomeStats(analogs);
   const metrics = keyMetricsNow(event, pb);
-  const citations = [
-    { name: "Methodology", url: "#", source: "PastForward Heuristics v0" }
-  ];
-  return { metrics, analogs, stats, citations };
+  const citations = [{ name: "Methodology", url: "#", source: "PastForward Heuristics v0" }];
+  const avgSim = analogs.length ? Math.round(analogs.reduce((a,x)=>a+x.similarity,0)/analogs.length) : null;
+  return { metrics, analogs, stats, citations, avgSim };
 }
+
 
 /* ============================================================
    NEW: Evidence + Metric composites (backing the big numbers)
    ============================================================ */
 
-// Robust scaler -> 0..100 using median/MAD -> logistic
 function toScore(x, median, mad, direction = "higher=hotter") {
   const z = mad === 0 ? 0 : (x - median) / (1.4826 * mad);
-  const s = 1 / (1 + Math.exp(-z)); // 0..1
+  const s = 1 / (1 + Math.exp(-z));
   const pct = direction === "higher=hotter" ? s : 1 - s;
   return Math.round(pct * 100);
 }
 
-// Evidence tiles (replace values/links with your live data later)
+/* NOTE:
+   Values here are “snapshot as of now” and meant to be updated monthly.
+   Sources: Dallas Fed Trimmed PCE YoY (2.7% for Jun 2025) and other public dashboards.
+*/
 const EVIDENCE = [
-  // Inflation pressure inputs
-  { id: "medianCPI",       group: "inflation", label: "Median CPI (y/y)", value: 3.2,  unit: "%",  asOf: "Jun 2025", method: "Cleveland Fed median CPI", sourceName: "FRED", sourceUrl: "https://fred.stlouisfed.org/series/MEDCPIM158SFRBCLE", pctile5y: 68 },
-  { id: "trimmedPCE",      group: "inflation", label: "Trimmed-Mean PCE (y/y)", value: 2.7, unit: "%",  asOf: "Jun 2025", method: "Dallas Fed trimmed mean", sourceName: "Dallas Fed", sourceUrl: "https://www.dallasfed.org/research/pce", pctile5y: 55 },
-  { id: "diffusionShare",  group: "inflation", label: "CPI items >3% y/y", value: 47, unit: "% of basket", asOf: "Jun 2025", method: "Price diffusion share", sourceName: "BLS (constructed)", sourceUrl: "https://www.bls.gov/cpi/", pctile5y: 62 },
+  { id: "medianCPI",       group: "inflation", label: "Median CPI (y/y)", value: 3.2,  unit: "%",  asOf: "Jun 2025", method: "Cleveland Fed median CPI (12-mo)", sourceName: "Cleveland Fed", sourceUrl: "https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting/median-cpi" },
+  { id: "trimmedPCE",      group: "inflation", label: "Trimmed-Mean PCE (y/y)", value: 2.7, unit: "%",  asOf: "Jun 2025", method: "12-month trimmed mean", sourceName: "Dallas Fed", sourceUrl: "https://www.dallasfed.org/research/pce" },
+  { id: "diffusionShare",  group: "inflation", label: "CPI items >3% y/y", value: 47, unit: "% of basket", asOf: "Jun 2025", method: "Price diffusion share (constructed)", sourceName: "BLS", sourceUrl: "https://www.bls.gov/cpi/" },
 
-  // Energy shock inputs
-  { id: "wtiYoY",          group: "energy",    label: "WTI crude (y/y)", value: 9, unit: "%", asOf: "Aug 2025", method: "Front-month y/y", sourceName: "EIA", sourceUrl: "https://www.eia.gov/", pctile5y: 52 },
-  { id: "gasInvVs5y",      group: "energy",    label: "Gasoline inv. vs 5y", value: -1, unit: "%", asOf: "Aug 2025", method: "Deviation vs 5-yr avg", sourceName: "EIA WPSR", sourceUrl: "https://www.eia.gov/petroleum/supply/weekly/", pctile5y: 35 },
-  { id: "distInvVs5y",     group: "energy",    label: "Distillate inv. vs 5y", value: -16, unit: "%", asOf: "Aug 2025", method: "Deviation vs 5-yr avg", sourceName: "EIA WPSR", sourceUrl: "https://www.eia.gov/petroleum/supply/weekly/", pctile5y: 15 },
+  { id: "wtiYoY",          group: "energy",    label: "WTI crude (y/y)", value: 9, unit: "%", asOf: "Aug 2025", method: "Front-month y/y", sourceName: "EIA", sourceUrl: "https://www.eia.gov/" },
+  { id: "gasInvVs5y",      group: "energy",    label: "Gasoline inv. vs 5y", value: -1, unit: "%", asOf: "Aug 2025", method: "Deviation vs 5-yr avg", sourceName: "EIA WPSR", sourceUrl: "https://www.eia.gov/petroleum/supply/weekly/" },
+  { id: "distInvVs5y",     group: "energy",    label: "Distillate inv. vs 5y", value: -16, unit: "%", asOf: "Aug 2025", method: "Deviation vs 5-yr avg", sourceName: "EIA WPSR", sourceUrl: "https://www.eia.gov/petroleum/supply/weekly/" },
 
-  // Funding stress inputs
-  { id: "hyOAS",           group: "funding",   label: "High-yield OAS", value: 3.9, unit: "pp", asOf: "Aug 2025", method: "ICE BofA HY OAS", sourceName: "FRED", sourceUrl: "https://fred.stlouisfed.org/series/BAMLH0A0HYM2", pctile5y: 48 },
-  { id: "cpTbill",         group: "funding",   label: "3-mo CP − T-bill", value: 0.18, unit: "pp", asOf: "Aug 2025", method: "Spread", sourceName: "FRED", sourceUrl: "https://fred.stlouisfed.org/", pctile5y: 44 },
+  { id: "hyOAS",           group: "funding",   label: "High-yield OAS", value: 3.9, unit: "pp", asOf: "Aug 2025", method: "ICE BofA HY OAS", sourceName: "FRED", sourceUrl: "https://fred.stlouisfed.org/series/BAMLH0A0HYM2" },
+  { id: "cpTbill",         group: "funding",   label: "3-mo CP − T-bill", value: 0.18, unit: "pp", asOf: "Aug 2025", method: "Spread", sourceName: "FRED", sourceUrl: "https://fred.stlouisfed.org/" },
 
-  // Supply disruption inputs
-  { id: "gscpi",           group: "supply",    label: "GSCPI", value: -0.25, unit: "z", asOf: "Jul 2025", method: "NY Fed supply chain pressure", sourceName: "NY Fed", sourceUrl: "https://www.newyorkfed.org/research/policy/gscpi", pctile5y: 40 },
-  { id: "supplierDelivery",group: "supply",    label: "Supplier deliveries", value: 56.1, unit: "ISM", asOf: "May 2025", method: "ISM index (>50 = slower)", sourceName: "ISM", sourceUrl: "https://www.ismworld.org/", pctile5y: 70 },
+  { id: "gscpi",           group: "supply",    label: "GSCPI", value: -0.25, unit: "z", asOf: "Jul 2025", method: "NY Fed supply pressure", sourceName: "NY Fed", sourceUrl: "https://www.newyorkfed.org/research/policy/gscpi" },
+  { id: "supplierDelivery",group: "supply",    label: "Supplier deliveries", value: 56.1, unit: "ISM", asOf: "May 2025", method: "Index (>50 = slower)", sourceName: "ISM", sourceUrl: "https://www.ismworld.org/" },
 
-  // Policy tightness input
-  { id: "taylorGap",       group: "policy",    label: "Taylor-rule gap", value: -0.6, unit: "pp", asOf: "Aug 2025", method: "Funds − simple Taylor rule", sourceName: "Atlanta/Cleveland Fed", sourceUrl: "https://www.atlantafed.org/cqer/research/taylor-rule", pctile5y: 45 },
+  { id: "taylorGap",       group: "policy",    label: "Taylor-rule gap", value: -0.6, unit: "pp", asOf: "Aug 2025", method: "Funds − simple Taylor", sourceName: "Atlanta/Cleveland Fed", sourceUrl: "https://www.atlantafed.org/cqer/research/taylor-rule" },
 ];
 
-// Metric defs → how to compute + explanations
 const METRIC_DEFS = [
   {
     id: "inflationPressure",
@@ -1398,6 +1394,86 @@ const METRIC_DEFS = [
     weights: { taylorGap: 1.0 },
   },
 ];
+/* ============================================================
+   DATA-DRIVEN RISK & PREDICTION (uses evidence + analogs)
+   ============================================================ */
+function computeAllMetricScores() {
+  const out = {};
+  METRIC_DEFS.forEach((m) => (out[m.id] = computeMetricScore(m)));
+  return out;
+}
+
+function weightedAvg(pairs) {
+  let num = 0, den = 0;
+  for (const [v, w] of pairs) { if (Number.isFinite(v) && Number.isFinite(w)) { num += v*w; den += w; } }
+  return den ? num / den : 0;
+}
+
+function metricsCompositeForPlaybook(selected, scores) {
+  const s = scores || {};
+  // Default weights cover most macro situations; tweak by dominant tag
+  const base = { inflationPressure: 0.35, energyShock: 0.25, fundingStress: 0.25, supplyDisruption: 0.15 };
+
+  const tagBoost = new Set(selected.tags || []);
+  if (tagBoost.has("finance"))      { base.fundingStress = 0.55; base.inflationPressure = 0.2; base.supplyDisruption = 0.15; base.energyShock = 0.1; }
+  else if (tagBoost.has("energy")) { base.energyShock = 0.55; base.inflationPressure = 0.2; base.supplyDisruption = 0.15; base.fundingStress = 0.1; }
+  else if (tagBoost.has("supply")) { base.supplyDisruption = 0.5; base.energyShock = 0.25; base.inflationPressure = 0.15; base.fundingStress = 0.1; }
+  else if (tagBoost.has("economy") || tagBoost.has("inflation")) {
+    base.inflationPressure = 0.5; base.energyShock = 0.2; base.fundingStress = 0.2; base.supplyDisruption = 0.1;
+  }
+
+  return Math.round(
+    weightedAvg([
+      [s.inflationPressure, base.inflationPressure],
+      [s.energyShock,       base.energyShock],
+      [s.fundingStress,     base.fundingStress],
+      [s.supplyDisruption,  base.supplyDisruption],
+      // Optionally include policy tightness (already scaled so higher = “hotter”)
+      [s.policyTightness,   0.1],
+    ])
+  );
+}
+
+function computeDataDrivenDial(selected, toggles, scores, quant, toggleDialFn = riskFromToggles) {
+  const metricsHot = metricsCompositeForPlaybook(selected, scores);              // 0..100
+  const analogWin = (quant?.stats?.winRate ?? 50);                              // 0..100 (higher = more “good” outcomes historically)
+  const analogRisk = 100 - analogWin;                                           // convert to risk
+  const toggleDial = toggleDialFn(selected, toggles);                           // 0..100 from assumptions
+
+  // Blend: metrics (current) + analogs (history) + assumptions (toggles)
+  const dial = 0.50 * metricsHot + 0.25 * analogRisk + 0.25 * toggleDial;
+  return Math.round(Math.max(0, Math.min(100, dial)));
+}
+
+function band(n) { return n >= 70 ? "HIGH" : n >= 45 ? "MODERATE" : "LOW"; }
+
+function generateDataDrivenPrediction(selected, dial, scores, quant) {
+  const top = [...METRIC_DEFS]
+    .map((m) => ({ id: m.id, label: m.label, v: scores[m.id] }))
+    .sort((a, b) => (b.v ?? 0) - (a.v ?? 0))
+    .slice(0, 2)
+    .filter((x) => Number.isFinite(x.v));
+
+  const analog = (quant?.analogs?.[0]) || null;
+  const horizon = quant?.stats?.medianTime || "varies";
+
+  // Pick scenario text by dial band
+  const sc =
+    dial >= 70 ? selected.scenarios.escalation :
+    dial <= 35 ? selected.scenarios.deescalation :
+                 selected.scenarios.baseline;
+
+  const hotBits = top.length
+    ? `Hottest signals: ${top.map(t => `${t.label} ${t.v}/100`).join(" · ")}. `
+    : "";
+
+  const analogBit = analog
+    ? `Closest analog: ${analog.case} (${analog.period}, ${analog.similarity}% match) → outcome: ${analog.outcome}. `
+    : "";
+
+  return `Data-driven read: overall risk is ${band(dial)} (${dial}/100). ${hotBits}${analogBit}Expected path: ${sc} Typical horizon: ${horizon}.`;
+}
+
 
 const EV = Object.fromEntries(EVIDENCE.map((e) => [e.id, e]));
 function computeMetricScore(def) {
@@ -1413,7 +1489,57 @@ function computeMetricScore(def) {
 }
 
 /* ============================================================
-   COMPONENTS: ScrollFade, Metric cards, Evidence grid
+   NEW: Case fingerprints → analog nowcast (numeric)
+   ============================================================ */
+
+const FP_KEYS = ["inflationPressure","energyShock","fundingStress","supplyDisruption","policyTightness"];
+
+const CASE_FINGERPRINTS = {
+  "1973 Oil Crisis (US/EU)": { inflationPressure: 65, energyShock: 92, fundingStress: 35, supplyDisruption: 75, policyTightness: 35, label: "energy shock → rationing; later disinflation with policy tightening", horizon: "quarters", direction: "hotter" },
+  "1979 Energy Shock (US)":  { inflationPressure: 85, energyShock: 95, fundingStress: 45, supplyDisruption: 70, policyTightness: 80, label: "second oil shock; deep tightening; inflation finally anchored", horizon: "quarters-years", direction: "hotter" },
+
+  "Panic of 1907 (US)":      { inflationPressure: 30, energyShock: 20, fundingStress: 92, supplyDisruption: 30, policyTightness: 60, label: "funding seizure; private pooling; reforms followed", horizon: "weeks-months", direction: "hotter" },
+  "Global Financial Crisis":  { inflationPressure: 25, energyShock: 15, fundingStress: 96, supplyDisruption: 40, policyTightness: 70, label: "credit collapse; guarantees/capital; slow recovery", horizon: "years", direction: "hotter" },
+
+  "Suez Closure":            { inflationPressure: 45, energyShock: 55, fundingStress: 30, supplyDisruption: 88, policyTightness: 45, label: "canal shut; Cape reroute; normalization in months", horizon: "months", direction: "hotter" },
+  "Ever Given / Suez":       { inflationPressure: 50, energyShock: 40, fundingStress: 25, supplyDisruption: 86, policyTightness: 40, label: "container jam; backlog cleared in months", horizon: "months", direction: "hotter" },
+};
+
+function vectorFrom(obj, keys){ return keys.map(k => (obj?.[k] ?? 0)); }
+function cosine100(a,b){ const d=a.reduce((s,x,i)=>s+x*(b[i]||0),0); const n1=Math.sqrt(a.reduce((s,x)=>s+x*x,0))||1; const n2=Math.sqrt(b.reduce((s,x)=>s+x*x,0))||1; return Math.round((d/(n1*n2))*100); }
+
+function currentMetricScoresObj(){
+  const out = {};
+  METRIC_DEFS.forEach(m => { out[m.id] = computeMetricScore(m); });
+  return out;
+}
+
+function analogsFromFingerprints(selected){
+  const scoresNow = currentMetricScoresObj();
+  const nowVec = vectorFrom(scoresNow, FP_KEYS);
+  const cases = (selected?.cases || []).filter(c => CASE_FINGERPRINTS[c.name]);
+  const rows = cases.map(c => {
+    const fp = CASE_FINGERPRINTS[c.name];
+    const sim = cosine100(nowVec, vectorFrom(fp, FP_KEYS));
+    return { case: c.name, period: String(c.year || "n/a"), similarity: sim, note: fp.label, horizon: fp.horizon, direction: fp.direction };
+  }).sort((a,b)=>b.similarity-a.similarity);
+  return rows.slice(0, Math.min(5, rows.length));
+}
+
+function summarizeNowcast(rows){
+  if (!rows.length) return {baseline: "Not enough numeric fingerprints for this playbook.", confidence: null};
+  const wsum = rows.reduce((s,r)=> s + r.similarity, 0) || 1;
+  const tilt = rows.reduce((s,r)=> s + (r.direction === "hotter" ? +1 : -1)*r.similarity, 0) / wsum;
+  const top = rows[0];
+  const leaning = tilt > 0.15 ? "pressure likely to remain elevated near-term" : tilt < -0.15 ? "cooling bias near-term" : "balanced risks";
+  const horizon = top.horizon || "months";
+  const baseline = `Based on the top analog${rows.length>1?"s":""} (${rows.map(r=>r.case).slice(0,3).join(", ")}), ${leaning}; typical horizon: ${horizon}.`;
+  const confidence = `Similarity ${top.similarity}% to ${top.case}.`;
+  return { baseline, confidence };
+}
+
+/* ============================================================
+   COMPONENTS
    ============================================================ */
 function ScrollFade({ children, className, maxHeight = "calc(100vh - 230px)" }) {
   const ref = useRef(null);
@@ -1430,31 +1556,15 @@ function ScrollFade({ children, className, maxHeight = "calc(100vh - 230px)" }) 
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
-  const fadeTop = {
-    background: "linear-gradient(180deg, rgba(11,19,38,1) 0%, rgba(11,19,38,0) 100%)",
-  };
-  const fadeBottom = {
-    background: "linear-gradient(0deg, rgba(11,19,38,1) 0%, rgba(11,19,38,0) 100%)",
-  };
+  const fadeTop = { background: "linear-gradient(180deg, rgba(11,19,38,1) 0%, rgba(11,19,38,0) 100%)" };
+  const fadeBottom = { background: "linear-gradient(0deg, rgba(11,19,38,1) 0%, rgba(11,19,38,0) 100%)" };
   return (
     <div className={`scrollfade ${className || ""}`} style={{ position: "relative", maxHeight }}>
       <div ref={ref} className="scrollfade-body" style={{ overflowY: "auto", paddingRight: 8, maxHeight }}>
         {children}
       </div>
-      <div
-        className="scrollfade-fade-top"
-        style={{
-          position: "absolute", left: 0, right: 0, top: 0, height: 18,
-          pointerEvents: "none", opacity: atTop ? 0 : 1, transition: "opacity 150ms", ...fadeTop,
-        }}
-      />
-      <div
-        className="scrollfade-fade-bottom"
-        style={{
-          position: "absolute", left: 0, right: 0, bottom: 0, height: 18,
-          pointerEvents: "none", opacity: atBottom ? 0 : 1, transition: "opacity 150ms", ...fadeBottom,
-        }}
-      />
+      <div className="scrollfade-fade-top" style={{ position: "absolute", left: 0, right: 0, top: 0, height: 18, pointerEvents: "none", opacity: atTop ? 0 : 1, transition: "opacity 150ms", ...fadeTop }} />
+      <div className="scrollfade-fade-bottom" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 18, pointerEvents: "none", opacity: atBottom ? 0 : 1, transition: "opacity 150ms", ...fadeBottom }} />
     </div>
   );
 }
@@ -1528,7 +1638,7 @@ function EvidenceGridFull() {
           </div>
           <div className="ev-meta">{e.method}</div>
           <div className="ev-meta muted">{e.sourceName}{e.asOf ? ` · As of ${e.asOf}` : ""}</div>
-          <div className="ev-chip">{e.pctile5y !== undefined ? `5y pct: ${Math.round(e.pctile5y)}th` : "—"}</div>
+          <div className="ev-chip">{e.pctile5y !== undefined ? `5y pct: ${Math.round(e.pctile5y)}th` : " "}</div>
         </div>
       ))}
     </div>
@@ -1593,13 +1703,26 @@ export default function App() {
     filtered[0] ||
     PLAYBOOKS[0];
 
-  const dial = riskFromToggles(selected, toggles);
-  const futureText = possibleFutureText(selected, toggles);
+  //const dial = riskFromToggles(selected, toggles);
+  //const futureText = possibleFutureText(selected, toggles);
   const onExportPDF = () => window.print();
 
-  // Build event/context and quant pack tied to the selected playbook
   const eventObj = useMemo(() => makeEvent(input, selected, toggles), [input, selected, toggles]);
   const quant = useMemo(() => buildQuantPack(eventObj, selected), [eventObj, selected]);
+  // === Data-driven dial + prediction (uses evidence + analogs + toggles)
+const metricScores = useMemo(() => computeAllMetricScores(), []);
+const dial = useMemo(
+  () => computeDataDrivenDial(selected, toggles, metricScores, quant),
+  [selected, toggles, metricScores, quant]
+);
+const futureText = useMemo(
+  () => generateDataDrivenPrediction(selected, dial, metricScores, quant),
+  [selected, dial, metricScores, quant]
+);
+
+
+  const numericAnalogs = useMemo(() => analogsFromFingerprints(selected), [selected]);
+  const nowcastSummary = useMemo(() => summarizeNowcast(numericAnalogs), [numericAnalogs]);
 
   return (
     <div className="app" data-theme={theme}>
@@ -1707,12 +1830,32 @@ export default function App() {
             <ScrollFade>
               <p className="summary">{selected.summary}</p>
 
-              {/* NEW: Headline Metrics backed by evidence */}
               <div className="section">
                 <div className="section-title">Key Metrics (0–100, backed by evidence)</div>
                 <HeadlineMetrics onJumpEvidence={() => setTab("evidence")} />
                 <div className="metrics-footnote">Scale 0–100 · Click “Explain” for methods & sources.</div>
               </div>
+
+              {/* NEW: Nowcast from historic lookalikes */}
+              {numericAnalogs.length > 0 && (
+                <div className="section">
+                  <div className="section-title">Prediction (nowcast from historic lookalikes)</div>
+                  <div className="nowcast">
+                    <div className="nowcast-main">{nowcastSummary.baseline}</div>
+                    {nowcastSummary.confidence && <div className="nowcast-conf">{nowcastSummary.confidence}</div>}
+                    <div className="analogs-grid">
+                      {numericAnalogs.map((a, i) => (
+                        <div key={i} className="analog-card">
+                          <div className="analog-case">{a.case}</div>
+                          <div className="analog-period">{a.period}</div>
+                          <div className="analog-sim">{a.similarity}% match</div>
+                          <div className="analog-outcome">{a.note}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid2">
                 <div className="section">
@@ -1803,7 +1946,6 @@ export default function App() {
           {/* EVIDENCE (heavy) */}
           {tab === "evidence" && (
             <>
-              {/* Quant Pack (existing) */}
               <div className="section quant-pack">
                 <div className="section-title">Similar Conditions & Metrics</div>
 
@@ -1819,48 +1961,28 @@ export default function App() {
                   </div>
                 )}
 
-                {quant.analogs.length > 0 && (
+                {numericAnalogs.length > 0 && (
                   <div className="quant-analogs">
-                    <div className="analogs-title">Closest historical periods</div>
+                    <div className="analogs-title">Closest historical periods (numeric)</div>
                     <div className="analogs-grid">
-                      {quant.analogs.map((a, i) => (
+                      {numericAnalogs.map((a, i) => (
                         <div key={i} className="analog-card">
                           <div className="analog-case">{a.case}</div>
                           <div className="analog-period">{a.period}</div>
                           <div className="analog-sim">{a.similarity}% match</div>
-                          <div className="analog-outcome">{a.outcome}</div>
+                          <div className="analog-outcome">{a.note}</div>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-
-                {quant.stats.n > 0 && (
-                  <div className="quant-stats">
-                    <div><strong>Win rate:</strong> {quant.stats.winRate}%</div>
-                    <div><strong>Typical horizon:</strong> {quant.stats.medianTime}</div>
-                    <div><strong>Effect:</strong> {quant.stats.effectRange}</div>
-                  </div>
-                )}
-
-                {quant.citations.length > 0 && (
-                  <div className="quant-citations">
-                    {quant.citations.map((c, i) => (
-                      <a key={i} href={c.url} target="_blank" rel="noreferrer">
-                        {c.name} — {c.source}
-                      </a>
-                    ))}
-                  </div>
-                )}
               </div>
 
-              {/* NEW: By-the-Numbers Evidence */}
               <div className="section">
                 <div className="section-title">By-the-Numbers Evidence</div>
                 <EvidenceGridFull />
               </div>
 
-              {/* Full Case Examples */}
               <div className="section">
                 <div className="section-title">Case Examples (full)</div>
                 <div className="cases">
@@ -1938,7 +2060,7 @@ a{color:inherit}
 
 .right .title-row{display:flex;align-items:baseline;gap:10px}
 .playbook-title{margin:0;font-size:22px;font-weight:900;color:#eaf2ff}
-.era{color:var(--muted);font-size:13px}
+.era{color:#9fb1c9;font-size:13px}
 .summary{margin-top:10px;color:#ced7e8}
 .section{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
 .section-title{font-weight:900;color:#cbd5e1;margin-bottom:8px}
@@ -1967,19 +2089,35 @@ a{color:inherit}
 .print-toggles{margin-top:8px;color:#6b7280;font-size:12px}
 .report-meta{margin-top:8px;color:#6b7280;font-size:12px}
 
-.foot{display:flex;gap:8px;align-items:center;justify-content:center;color:var(--muted);font-size:12px;padding:16px 0 24px}
+.foot{display:flex;gap:8px;align-items:center;justify-content:center;color:#9fb1c9;font-size:12px;padding:16px 0 24px}
 
 /* Tabs */
 .tabs{display:flex;gap:8px;margin-top:4px}
 .tab{border:1px solid var(--line);background:#0e1a33;color:#dbeafe;border-radius:10px;padding:6px 10px;cursor:pointer}
 .tab.active{outline:2px solid var(--accent)}
 
-/* Clamp long lists in Overview */
-.clamp-6{max-height:9em; overflow: hidden; position: relative;}
-.clamp-6::after{
-  content:""; position:absolute; left:0; right:0; bottom:0; height:24px;
-  background:linear-gradient(180deg, rgba(14,26,51,0) 0%, rgba(14,26,51,1) 100%);
+/* Clamp long lists in Overview — extra space on bottom for readability */
+.clamp-6{
+  max-height:9.5em;
+  overflow:hidden;
+  position:relative;
+  padding-bottom:14px;
+  margin-bottom:4px;
 }
+.clamp-6::after{
+  content:"";
+  position:absolute; left:0; right:0; bottom:0;
+  height:28px;
+  pointer-events:none;
+  background:linear-gradient(
+    180deg,
+    rgba(14,26,51,0) 0%,
+    rgba(14,26,51,.55) 60%,
+    rgba(14,26,51,.85) 85%,
+    rgba(14,26,51,1) 100%
+  );
+}
+
 .more summary{cursor:pointer; color:#9fb1c9; margin-top:6px}
 .more[open] summary{color:#cbd5e1}
 
@@ -1987,9 +2125,9 @@ a{color:inherit}
 .quant-pack{margin-top:16px}
 .quant-metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:12px}
 .metric-card{background:#0e1a33;border:1px solid var(--line);border-radius:8px;padding:8px}
-.metric-name{font-size:12px;color:var(--muted)}
+.metric-name{font-size:12px;color:#9fb1c9}
 .metric-value{font-size:16px;font-weight:700}
-.metric-note{font-size:11px;color:var(--muted)}
+.metric-note{font-size:11px;color:#9fb1c9}
 .quant-analogs .analogs-title{font-weight:700;margin-bottom:6px}
 .analogs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:12px}
 .analog-card{background:#0e1a33;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px}
@@ -2017,7 +2155,6 @@ a{color:inherit}
 .metric-explain-head{font-weight:800; color:#dbeafe; margin-top:6px; margin-bottom:2px}
 .evidence-list{margin:4px 0 8px 16px; padding:0}
 .btn-link{background:none;border:none;color:var(--accent);cursor:pointer;padding:0}
-
 .metrics-footnote{margin-top:6px; color:#9fb1c9; font-size:12px}
 
 /* NEW: Evidence grid */
@@ -2033,10 +2170,14 @@ a{color:inherit}
 .ev-meta.muted{color:#9fb1c9}
 .ev-chip{margin-top:6px;font-size:11px;color:#9fb1c9}
 
-/* ScrollFade base (no extra classes needed; fades are inline-styled) */
+/* Nowcast section */
+.nowcast-main{font-weight:700;margin-bottom:4px}
+.nowcast-conf{color:#9fb1c9;font-size:12px;margin-bottom:8px}
+
+/* ScrollFade base */
 .scrollfade{}
 
-/* ---- Print (Export to PDF) ---- */
+/* Print */
 @media print{
   :root{color-scheme:light;}
   body{background:white !important;}
